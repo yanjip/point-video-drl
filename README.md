@@ -13,3 +13,11 @@
 - 如果超过了计算能力，不done掉，作为惩罚项
 - 若Tu和Td大于了Tslot，也只做惩罚，不done掉
 - done是正常结束，terminal是发生特殊情况下的终止；done没有nextstate，但terminal有
+
+# 5.12
+- rt:1800Mps
+- Dmax:60Mbit
+- 压缩后25Mbit，未压缩30Mbit
+
+# 5.13
+- 结果action始终是[0,1]，网络根本没学到策略

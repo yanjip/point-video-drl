@@ -6,6 +6,7 @@ import torch
 import numpy as np
 from collections import deque
 import torch
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class N_Steps_Prioritized_ReplayBuffer(object):
     def __init__(self, args):
@@ -42,9 +43,9 @@ class N_Steps_Prioritized_ReplayBuffer(object):
         batch = {}
         for key in self.buffer.keys():  # numpy->tensor
             if key == 'action':
-                batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.long)
+                batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.long).to(device=device)
             else:
-                batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.float32)
+                batch[key] = torch.tensor(self.buffer[key][index], dtype=torch.float32).to(device=device)
 
         return batch, None, None
 

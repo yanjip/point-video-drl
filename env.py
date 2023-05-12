@@ -8,7 +8,7 @@ from tiles import tile
 
 def linear_normalization(x):
     # return (x - min(tiles.M_all_bound)) / (max(tiles.M_all_bound) - min(tiles.M_all_bound))
-    return (x - 0) / (max(para.M_all_bound) - 0)
+    return (x - 0) / (para.bitrate - 0)
 
 
 def normalize(W):
@@ -92,7 +92,7 @@ class subEnvironment:
 
         self.Mi=para.bitrate
 
-        self.index=0
+        # self.index=0
 
         self.trans=transmission(para.Pmax)
 
@@ -101,7 +101,7 @@ class subEnvironment:
         self.action_dim = 10
         # self.observation_shape = (self.state_dim,)
         self.action_space = (self.action_dim,)
-        np.random.seed(seed)
+        # np.random.seed(seed)
 
         # self.Q_tile=Q_tile
         # shared buffer
@@ -123,18 +123,20 @@ class subEnvironment:
         #默认排序：
         self.searchId=self.fov_tile_id
         pass
-    def get_Index(self,):
-        return self.searchId[self.index]
+    def get_Index(self,index):
+        return self.searchId[index]
 
     def reset(self):
+        self.Dt=0
         self.done=0
         observation=np.array([0.0,0.0,0.0,0.0,0])   ##Dt、Tu、Td、dis、zoi、l
         self.reward=0.0
+        self.all_data=0
         self.all_data_nor = linear_normalization(self.all_data)
         #计算Qi
-        self.index=0
-        dis_i=self.ttile.dis[self.searchId[self.index]]
-        zi=self.ttile.z[self.searchId[self.index]]
+        # self.index=0
+        dis_i=self.ttile.dis[self.searchId[0]]
+        zi=self.ttile.z[self.searchId[0]]
 
         obs=np.array([self.all_data_nor,self.Dt_nor,dis_i,zi])
 
@@ -142,7 +144,7 @@ class subEnvironment:
 
         pass
 
-    def step(self,action):
+    def step(self,action,index):
         if action<5:
             k=1      #1表示压缩
         else: k=0
@@ -163,28 +165,38 @@ class subEnvironment:
         Td=Mil_com/(para.F_max*para.b_s)
 
         #计算Qi
-        dis_i=self.ttile.dis[self.searchId[self.index]]
-        zi=self.ttile.z[self.searchId[self.index]]
+        dis_i=self.ttile.dis[self.searchId[index-1]]
+        zi=self.ttile.z[self.searchId[index-1]]
 
-        li=abs(l-4.5)
-        reward=-Tu -Td + dis_i*zi*li
-
-        self.Dmax=para.F_max*para.b_s*(para.T_slot-Tu)
-        if self.Dt>self.Dmax:
+        li=abs(l-4.5)/4.5
+        #########奖励设置################
+        penalty_t=(Tu +Td)/para.T_slot * 10
+        #dismax=1 zimax=1 limax=4.5
+        reward= -penalty_t + 20/dis_i*zi*li
+        reward = max(5, reward)
+        # reward*=10
+        # self.Dmax=para.F_max*para.b_s*(para.T_slot-Tu)
+        # if self.Dt>self.Dmax:
             # self.done=1
-            r=linear_normalization(self.Dt-self.Dmax) #后面再调(意思是若Dt越接近Dmax越好）
-            reward-=r
+        # r=linear_normalization(self.Dt-self.Dmax) #后面再调(意思是若Dt越接近Dmax越好）
+        r=0
+        if self.Dt<self.Dmax:
+            r=abs(reward)
+        if k==1 and self.Dt>self.Dmax:
+            r=-200
+        reward+=r
 
-        self.index += 1
+        # self.index += 1
 
-        if self.index == para.N_F :
+        if index == para.N_F :
             self.done=1
-            self.index=0
+            # self.index=0
         if self.done!=1:
-            dis_i=self.ttile.dis[self.searchId[self.index]]
-            zi=self.ttile.z[self.searchId[self.index]]
-            Dt_nor=linear_normalization(self.Dt)
-            next_obs=np.array([self.all_data_nor,Dt_nor,dis_i,zi])
+            dis_i=self.ttile.dis[self.searchId[index]]
+            zi=self.ttile.z[self.searchId[index]]
+            # Dt_nor=linear_normalization(self.Dt)
+            Dt_Dmax_nor=linear_normalization(self.Dt-self.Dmax)
+            next_obs=np.array([self.all_data_nor,Dt_Dmax_nor,dis_i,zi])
         else:next_obs=None
 
         return next_obs,reward,self.done,None

@@ -9,6 +9,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import math
 
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 class Dueling_Net(nn.Module):
     def __init__(self, args):
@@ -35,19 +36,20 @@ class Dueling_Net(nn.Module):
 class Net(nn.Module):
     def __init__(self, args):
         super(Net, self).__init__()
-        self.fc1 = nn.Linear(args.state_dim, args.hidden_dim)
-        self.fc2 = nn.Linear(args.hidden_dim, args.hidden_dim)
+        self.fc1 = nn.Linear(args.state_dim, args.hidden_dim).to(device=device)
+        self.fc2 = nn.Linear(args.hidden_dim, args.hidden_dim).to(device=device)
         if args.use_noisy:
             pass
             # self.fc3 = NoisyLinear(args.hidden_dim, args.action_dim)
         else:
-            self.fc3 = nn.Linear(args.hidden_dim, args.action_dim)
+            self.fc3 = nn.Linear(args.hidden_dim, args.action_dim).to(device=device)
 
     def forward(self, s):
-        s = torch.relu(self.fc1(s))
-        s = torch.relu(self.fc2(s))
-        Q = self.fc3(s)
-        return Q
+        s=s.to(device)
+        s = torch.relu(self.fc1(s)).to(device=device)
+        s = torch.relu(self.fc2(s)).to(device=device)
+        Q = self.fc3(s).to(device=device)
+        return Q.to(device=device)
 
 class DQN(object):
     def __init__(self, args):
@@ -71,14 +73,15 @@ class DQN(object):
             self.gamma = self.gamma ** args.n_steps
 
         if self.use_dueling:  # Whether to use the 'dueling network'
-            self.net = Dueling_Net(args)
+            self.net = Dueling_Net(args).to(device=device)
         else:
-            self.net = Net(args)
+            self.net = Net(args).to(device=device)
 
         self.target_net = copy.deepcopy(self.net)  # Copy the online_net to the target_net
 
         self.optimizer = torch.optim.Adam(self.net.parameters(), lr=self.lr)
-
+        for param in self.net.parameters():
+            param.to(device)
     def choose_action(self, state, epsilon):
         with torch.no_grad():
             state = torch.unsqueeze(torch.tensor(state, dtype=torch.float), 0)
