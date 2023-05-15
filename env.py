@@ -82,22 +82,22 @@ class transmission():
 
 class subEnvironment:
     def __init__(self, seed,ttile:tile,fov_id):
-        self.fov_id=fov_id
-        self.ttile=ttile
-        self.fov =ttile.Fovs[fov_id]
-        self.fov_tile_id=ttile.Fovs_tile_id[fov_id]
-        self.dis=ttile.dis[self.fov_tile_id]
-        self.z=ttile.z[self.fov_tile_id]
-        self.Q_fov=ttile.Q[self.fov_tile_id]    #暂时没有排序的必要
+        self.fov_id = fov_id
+        self.ttile = ttile
+        self.fov = ttile.Fovs_tile_id[fov_id]
+        self.fov_tile_id = ttile.Fovs_tile_id[fov_id]
+        self.dis = ttile.dis[self.fov_tile_id]
+        self.z = ttile.get_z(fov_id, self.fov_tile_id)
+        # self.Q_fov=ttile.Q[self.fov_tile_id]    #暂时没有排序的必要
 
-        self.Mi=para.bitrate
+        self.Mi = para.bitrate
 
         # self.index=0
 
-        self.trans=transmission(para.Pmax)
+        self.trans = transmission(para.Pmax)
 
-        self.action_value=[1.0,0.8,0.6,0.4,0.2, 0.2,0.4,0.6,0.8,1.0] #压缩->未压缩
-        self.state_dim = 4   #Dt、-Tu、Td、Qi、
+        self.action_value = [1.0, 0.8, 0.6, 0.4, 0.2, 0.2, 0.4, 0.6, 0.8, 1.0]  # 压缩->未压缩
+        self.state_dim = 5  # Dt、-Tu、Td、Qi、
         self.action_dim = 10
         # self.observation_shape = (self.state_dim,)
         self.action_space = (self.action_dim,)
@@ -107,38 +107,55 @@ class subEnvironment:
         # shared buffer
         # self.max_buffer_size = max_buffer_size
         # self.batch_size = batch_size
-        self.Dt=0     #HMD的解码比特数
-        self.Dt_nor=0.0
-        self.all_data=0
-        self.data_tiles_nor=0.0
-        self.reward=0.0
-        self.Dmax=para.F_max*para.b_s*para.T_slot
+        self.Dt = 0  # HMD的解码比特数
+        self.Dt_nor = 0.0
+        self.all_data = 0
+        self.data_tiles_nor = 0.0
+        self.reward = 0.0
+        self.Dmax = para.F_max * para.b_s * para.T_slot
 
         self.get_order()
+        self.get_Q()
+        pass
 
-    def get_order(self,):
+    def get_Q(self, ):
+        Q = []
+        for i in range(para.N_F):
+            q = self.z[i] * (1 / self.ttile.dis[self.searchId[i]]) * self.ttile.O[self.searchId[i]]
+            Q.append(q)
+        self.Q = np.array(Q)
+
+    def get_order(self, ):
         ##self.Q=np.sort(self.Q_fov)[::-1]
         # self.searchId=np.argsort(self.Q_fov)[::-1]
 
-        #默认排序：
-        self.searchId=self.fov_tile_id
+        # 默认排序：
+        self.searchId = self.fov_tile_id
         pass
-    def get_Index(self,index):
+
+    def get_Index(self, index):
         return self.searchId[index]
 
     def reset(self):
-        self.Dt=0
-        self.done=0
-        observation=np.array([0.0,0.0,0.0,0.0,0])   ##Dt、Tu、Td、dis、zoi、l
-        self.reward=0.0
-        self.all_data=0
-        self.all_data_nor = linear_normalization(self.all_data)
-        #计算Qi
-        # self.index=0
-        dis_i=self.ttile.dis[self.searchId[0]]
-        zi=self.ttile.z[self.searchId[0]]
+        # 统计结果信息：
+        self.tile_QoE = []
+        self.tile_data = []
 
-        obs=np.array([self.all_data_nor,self.Dt_nor,dis_i,zi])
+        self.Dt = 0
+        self.Bt = 1  # 视频缓冲区 初始化为2s
+        self.time_occu = 0.0
+        self.done = 0
+        observation = np.array([0.0, 0.0, 0.0, 0.0, 0])  ##Dt、Tu、Td、dis、zoi、l
+        self.reward = 0.0
+        self.all_data = 0
+        self.all_data_nor = linear_normalization(self.all_data)
+        # 计算Qi
+        # self.index=0
+        dis_i = self.ttile.dis[self.searchId[0]]
+        zi = self.z[0]
+        Oi = self.ttile.O[self.searchId[0]]
+
+        obs = np.array([self.time_occu, self.Dt_nor, dis_i, zi, Oi])
 
         return obs
 
@@ -154,54 +171,77 @@ class subEnvironment:
 
         # 既然Tu算不了，就先把传输的比特数作为环境，归一化(可以算了
         data_tiles = k * Mil * para.co_ratio + (1 - k) * Mil
+        self.tile_data.append(data_tiles)
         self.all_data += data_tiles
         self.all_data_nor = linear_normalization(self.all_data)
-        Tu=data_tiles/self.trans.rt
+        Tu = data_tiles / self.trans.rt
 
-        Mil_com=k*Mil*para.co_ratio
-        self.Dt+=Mil_com       #
-        self.Dt_nor=linear_normalization(Mil_com)
-        #计算Td
-        Td=Mil_com/(para.F_max*para.b_s)
+        Mil_com = k * Mil * para.co_ratio
+        self.Dt += Mil_com  #
+        self.Dt_nor = linear_normalization(Mil_com)
+        # 计算Td
+        Td = Mil_com / (para.F_max * para.b_s)
 
-        #计算Qi
-        dis_i=self.ttile.dis[self.searchId[index-1]]
-        zi=self.ttile.z[self.searchId[index-1]]
+        # 计算Qi
+        dis_i = self.ttile.dis[self.searchId[index - 1]]
+        zi = self.z[index - 1]
+        Oi = self.ttile.O[self.searchId[index - 1]]
 
-        li=abs(l-4.5)/4.5
+        li = abs(l - 4.5) + 0.5
         #########奖励设置################
-        penalty_t=(Tu +Td)/para.T_slot * 10
-        #dismax=1 zimax=1 limax=4.5
-        reward= -penalty_t + 20/dis_i*zi*li
-        reward = max(5, reward)
+        self.Bt = self.Bt + para.f / para.fps - para.T_slot
+        self.time_occu += (Tu + Td) / para.T_slot
+
+        penalty_t = (Tu + Td - para.T_slot)
+        # dismax=1 zimax=1 limax=4.5
+        p = 0
+        if penalty_t > 0:
+            p = -10
+        q = 100 / dis_i * zi * li * (1 / Oi)
+        reward = p + q
+        self.tile_QoE.append(q)
+        reward = min(5, reward)
         # reward*=10
         # self.Dmax=para.F_max*para.b_s*(para.T_slot-Tu)
         # if self.Dt>self.Dmax:
-            # self.done=1
+        # self.done=1
         # r=linear_normalization(self.Dt-self.Dmax) #后面再调(意思是若Dt越接近Dmax越好）
-        r=0
-        if self.Dt<self.Dmax:
-            r=abs(reward)
-        if k==1 and self.Dt>self.Dmax:
-            r=-200
-        reward+=r
+        r = 0
+        if self.Dt < self.Dmax and k == 1:
+            # r=abs(reward)
+            r = 5
+        if k == 1 and self.Dt > self.Dmax:
+            r = -10
+        reward += r
 
         # self.index += 1
 
-        if index == para.N_F :
-            self.done=1
+        if index == para.N_F:
+            self.done = 1
             # self.index=0
-        if self.done!=1:
-            dis_i=self.ttile.dis[self.searchId[index]]
-            zi=self.ttile.z[self.searchId[index]]
+        if self.done != 1:
+            dis_i = self.ttile.dis[self.searchId[index]]
+            zi = self.z[index]
             # Dt_nor=linear_normalization(self.Dt)
-            Dt_Dmax_nor=linear_normalization(self.Dt-self.Dmax)
-            next_obs=np.array([self.all_data_nor,Dt_Dmax_nor,dis_i,zi])
-        else:next_obs=None
+            Dt_Dmax_nor = linear_normalization(self.Dt - self.Dmax)
+            next_obs = np.array([self.time_occu, Dt_Dmax_nor, dis_i, zi, Oi])
+        else:
+            next_obs = np.array([0., 0., 0., 0., 0.])
 
-        return next_obs,reward,self.done,None
+        return next_obs, reward, self.done, None
 
+    def get_info(self, ):
+        # 设置打印选项，保留2位小数
+        np.set_printoptions(precision=2)
+
+        print("tile_id：", self.fov_tile_id)
+        print("distance：", self.dis)
+        O = np.array(self.ttile.O)
+        print("遮挡等级：", O[self.searchId])
+        print("tile_datasize:", self.tile_data)
+        tile_QoE = np.array(self.tile_QoE)
+        print("time_consum:", self.time_occu)
+        print("QoE:", tile_QoE)
+        print("sum_QoE:", sum(self.tile_QoE), end='\n\n')
 
         pass
-
-

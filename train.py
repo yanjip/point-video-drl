@@ -61,7 +61,7 @@ class Runner():
             self.algorithm += '_PER'
         if args.use_n_steps:
             self.algorithm += "_N_steps"
-        self.writer = SummaryWriter(log_dir='runs/DQN_{}/seed_{}'.format(self.algorithm,  seed))
+        # self.writer = SummaryWriter(log_dir='runs/DQN_{}/seed_{}'.format(self.algorithm,  seed))
 
         self.evaluate_num = 0  # Record the number of evaluations
         self.evaluate_rewards = []  # Record the rewards during the evaluating
@@ -112,20 +112,22 @@ class Runner():
             while not done:
                 action = self.agent.choose_action(state, epsilon=0)
                 res.append(action)
-                episode_steps+=1
-                next_state, reward, done, _ = self.env.step(action,episode_steps)
+                episode_steps += 1
+                next_state, reward, done, _ = self.env.step(action, episode_steps)
                 episode_reward += reward
                 state = next_state
             evaluate_reward += episode_reward
         self.agent.net.train()
         evaluate_reward /= self.args.evaluate_times
         self.evaluate_rewards.append(evaluate_reward)
-        print("###########     {}     ###########\n".format(evaluate_reward))
-        print("total_steps:{} \t evaluate_reward:{} \t epsilon：{}".format(self.total_steps, evaluate_reward, self.epsilon))
+        # print("###########     {}     ###########\n".format(evaluate_reward))
+        print("-----------------total_steps:{} \t evaluate_reward:{} \t epsilon：{}".format(self.total_steps,
+                                                                                           evaluate_reward,
+                                                                                           self.epsilon))
         # self.writer.add_scalar('step_rewards:', evaluate_reward, global_step=self.total_steps)
 
-        #统计结果
-        new_res=[]
+        # 统计结果
+        new_res = []
         for a in res:
             if a < 5:
                 k = 1  # 1表示压缩
@@ -133,7 +135,9 @@ class Runner():
                 k = 0
             l = a  # 范围就是0-9
             new_res.append([k,l])
+        self.new_res = new_res
         print(new_res)
+        self.env.get_info()
         pass
 
 
@@ -146,7 +150,7 @@ if __name__ == '__main__':
     curr_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     parser = argparse.ArgumentParser("Hyperparameter Setting for DQN")
     # parser.add_argument("--max_train_steps", type=int, default=int(4e5), help=" Maximum number of training steps")
-    parser.add_argument("--max_train_steps", type=int, default=int(2e4), help=" Maximum number of training steps")
+    parser.add_argument("--max_train_steps", type=int, default=int(1.2e4), help=" Maximum number of training steps")
 
     parser.add_argument("--evaluate_freq", type=float, default=1e3,
                         help="Evaluate the policy every 'evaluate_freq' steps")
@@ -168,7 +172,7 @@ if __name__ == '__main__':
                         help="Update frequency of the target network(hard update)")
     parser.add_argument("--n_steps", type=int, default=3, help="n_steps")
     parser.add_argument("--use_lr_decay", type=bool, default=True, help="Learning rate Decay")
-    parser.add_argument("--grad_clip", type=float, default=10.0, help="Gradient clip")
+    parser.add_argument("--grad_clip", type=float, default=0, help="Gradient clip")  # 原本10.0
 
     parser.add_argument("--use_double", type=bool, default=True, help="Whether to use double Q-learning")
     parser.add_argument("--use_dueling", type=bool, default=False, help="Whether to use dueling network")
@@ -177,9 +181,9 @@ if __name__ == '__main__':
     parser.add_argument("--use_n_steps", type=bool, default=True, help="Whether to use n_steps Q-learning")
 
     args = parser.parse_args()
-    seed=0
-    fov_id=0
+    seed = 3
+    fov_id = 1
 
-    ttile = CustomUnpickler(open('tiles.pkl','rb')).load()
-    runner=Runner(args=args,seed=seed,ttile=ttile,fov_id=0)
+    ttile = CustomUnpickler(open('tiles.pkl', 'rb')).load()
+    runner = Runner(args=args, seed=seed, ttile=ttile, fov_id=0)
     runner.run()

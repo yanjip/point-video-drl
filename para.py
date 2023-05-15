@@ -17,8 +17,8 @@ KHZ = 1e3
 MHZ = KHZ*1e3
 GHZ = MHZ*1e3
 
-N_aps=4      #APs
-T_slot = 0.3
+N_aps = 4  # APs
+T_slot = 0.133
 
 # Channels
 B = 100*MHZ  # MHz
@@ -53,9 +53,9 @@ a2=0.5
 
 
 #UE
-F_max=0.1e8     # cycles/s MEC那篇论文
-b_s=0.03e3      #bits/cycle  MEC
-D_max=1*GB      #HMD的处理区数据量大小
+F_max = 0.1e8  # cycles/s MEC那篇论文
+b_s = 0.02e3  # bits/cycle  MEC
+D_max = 1 * GB  #HMD的处理区数据量大小
 
 QoE0=10
 

@@ -45,9 +45,11 @@ class Net(nn.Module):
             self.fc3 = nn.Linear(args.hidden_dim, args.action_dim).to(device=device)
 
     def forward(self, s):
-        s=s.to(device)
+        s = s.to(device)
         s = torch.relu(self.fc1(s)).to(device=device)
         s = torch.relu(self.fc2(s)).to(device=device)
+        # s = F.softmax(self.fc1(s),dim=1).to(device=device)
+        # s = F.softmax(self.fc2(s),dim=1).to(device=device)
         Q = self.fc3(s).to(device=device)
         return Q.to(device=device)
 
