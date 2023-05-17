@@ -34,11 +34,13 @@ class Runner():
         np.random.seed(seed)
         torch.manual_seed(seed)
 
-        self.env=env.subEnvironment(seed,ttile,fov_id)
+        self.env = env.subEnvironment(seed, ttile, fov_id)
         self.args.state_dim = self.env.state_dim
-        self.args.action_dim=self.env.action_dim
+        self.args.action_dim = self.env.action_dim
 
-        # self.writer = SummaryWriter(log_dir='runs/DQN/{}_env_{}_number_{}_seed_{}'.format(self.algorithm, env_name, number, seed))
+        current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        self.train_log_dir = 'runs/DQN/' + current_time
+        self.writer = SummaryWriter(log_dir=self.train_log_dir)
         self.evaluate_num = 0  # Record the number of evaluations
         self.evaluate_rewards = []  # Record the rewards during the evaluating
         self.total_steps = 0  # Record the total steps during the training
@@ -65,6 +67,8 @@ class Runner():
 
         self.evaluate_num = 0  # Record the number of evaluations
         self.evaluate_rewards = []  # Record the rewards during the evaluating
+        self.train_rewards = []  # Record the rewards during the evaluating
+
         self.total_steps = 0  # Record the total steps during the training
         if args.use_noisy:  # 如果使用Noisy net，就不需要epsilon贪心策略了
             self.epsilon = 0
@@ -79,10 +83,12 @@ class Runner():
             state = self.env.reset()
             done = False
             episode_steps = 0
+            episode_reward = 0
             while not done:
                 action = self.agent.choose_action(state, epsilon=self.epsilon)
                 episode_steps += 1
                 next_state, reward, done, _ = self.env.step(action,episode_steps)
+                episode_reward += reward
                 self.total_steps += 1
 
                 if not self.args.use_noisy:  # Decay epsilon
@@ -96,8 +102,15 @@ class Runner():
 
                 if self.total_steps % self.args.evaluate_freq == 0:
                     self.evaluate_policy()
-        # Save reward
-        # np.save('./data_train/{}_seed_{}.npy'.format(self.algorithm, self.seed), np.array(self.evaluate_rewards))
+            # Save reward
+            self.writer.add_scalar('step_rewards:', episode_reward, global_step=self.total_steps)
+
+        #     self.train_rewards.append(episode_reward)
+        # t=np.array(self.train_rewards)
+        # self.writer.add_scalar('step_rewards:', t, global_step=self.total_steps)
+
+        self.writer.close()
+        np.save(self.train_log_dir + 'reward.npy', np.array(self.evaluate_rewards))
 
 
     def evaluate_policy(self, ):
@@ -124,7 +137,7 @@ class Runner():
         print("-----------------total_steps:{} \t evaluate_reward:{} \t epsilon：{}".format(self.total_steps,
                                                                                            evaluate_reward,
                                                                                            self.epsilon))
-        # self.writer.add_scalar('step_rewards:', evaluate_reward, global_step=self.total_steps)
+        # self.writer.add_scalar('evaluate_rewards:', evaluate_reward, global_step=self.total_steps)
 
         # 统计结果
         new_res = []
@@ -150,7 +163,7 @@ if __name__ == '__main__':
     curr_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     parser = argparse.ArgumentParser("Hyperparameter Setting for DQN")
     # parser.add_argument("--max_train_steps", type=int, default=int(4e5), help=" Maximum number of training steps")
-    parser.add_argument("--max_train_steps", type=int, default=int(1.2e4), help=" Maximum number of training steps")
+    parser.add_argument("--max_train_steps", type=int, default=int(2e4), help=" Maximum number of training steps")
 
     parser.add_argument("--evaluate_freq", type=float, default=1e3,
                         help="Evaluate the policy every 'evaluate_freq' steps")
@@ -164,7 +177,7 @@ if __name__ == '__main__':
     parser.add_argument("--gamma", type=float, default=0.90, help="Discount factor")
     parser.add_argument("--epsilon_init", type=float, default=0.5, help="Initial epsilon")
     parser.add_argument("--epsilon_min", type=float, default=0.1, help="Minimum epsilon")
-    parser.add_argument("--epsilon_decay_steps", type=int, default=int(1e5),
+    parser.add_argument("--epsilon_decay_steps", type=int, default=int(0.15e5),
                         help="How many steps before the epsilon decays to the minimum")  #原本1e5
     parser.add_argument("--tau", type=float, default=0.005, help="soft update the target network")
     parser.add_argument("--use_soft_update", type=bool, default=True, help="Whether to use soft update")
@@ -182,7 +195,7 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
     seed = 3
-    fov_id = 1
+    fov_id = 2
 
     ttile = CustomUnpickler(open('tiles.pkl', 'rb')).load()
     runner = Runner(args=args, seed=seed, ttile=ttile, fov_id=0)

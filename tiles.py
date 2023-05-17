@@ -64,8 +64,8 @@ class tile():
         self.pr = np.array(pr)
 
     def get_dis(self):
-        dis_range=[1,1.5,2.0]
-        self.dis=np.random.choice(dis_range,N,p=[0.5,0.3,0.2])
+        dis_range = [1, 2.0, 3.0]
+        self.dis = np.random.choice(dis_range, N, p=[0.5, 0.3, 0.2])
 
     def get_O(self):  # 生成NF个遮挡等级数
         # p=np.random.normal(0,2,NF)
@@ -103,8 +103,9 @@ if __name__ == '__main__':
     # ttile.get_Q1()
     print(ttile)
 
-    # import pickle
-    # out_put = open("tiles.pkl", 'wb')
-    # t = pickle.dumps(ttile)
-    # out_put.write(t)
-    # out_put.close()
+    import pickle
+
+    out_put = open("tiles.pkl", 'wb')
+    t = pickle.dumps(ttile)
+    out_put.write(t)
+    out_put.close()

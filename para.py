@@ -18,7 +18,6 @@ MHZ = KHZ*1e3
 GHZ = MHZ*1e3
 
 N_aps = 4  # APs
-T_slot = 0.133
 
 # Channels
 B = 100*MHZ  # MHz
@@ -41,23 +40,24 @@ f=30      #帧数
 fps=30
 M=bitrate*(f/fps)
 
-Pmax=100       #BS的功率上限
-co_ratio=0.8  #compress_ratio
+Pmax = 60  # BS的功率上限
+co_ratio = 0.8  # compress_ratio
 # M=np.array([])
 # f_fps=1.0
-action_value=[0.2,0.4,0.6,0.8,1.0]
-quality_level={1:0.2,2:0.4,3:0.6,4:0.8,5:1.0}
+action_value = [0.2, 0.4, 0.6, 0.8, 1.0]
+quality_level = {1: 0.2, 2: 0.4, 3: 0.6, 4: 0.8, 5: 1.0}
 
-a1=0.5
-a2=0.5
+a1 = 0.5
+a2 = 0.5
 
+T_slot = 0.30
 
-#UE
-F_max = 0.1e8  # cycles/s MEC那篇论文
-b_s = 0.02e3  # bits/cycle  MEC
-D_max = 1 * GB  #HMD的处理区数据量大小
+# UE
+F_max = 0.3e8  # cycles/s MEC那篇论文
+b_s = 0.04e3  # bits/cycle  MEC   之前0.02
+D_max = 1 * GB  # HMD的处理区数据量大小
 
-QoE0=10
+QoE0 =10
 
 
 

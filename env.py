@@ -140,6 +140,7 @@ class subEnvironment:
         # 统计结果信息：
         self.tile_QoE = []
         self.tile_data = []
+        self.Tu_Td = []
 
         self.Dt = 0
         self.Bt = 1  # 视频缓冲区 初始化为2s
@@ -193,25 +194,38 @@ class subEnvironment:
         self.time_occu += (Tu + Td) / para.T_slot
 
         penalty_t = (Tu + Td - para.T_slot)
+        self.Tu_Td.append([Tu, Td])
         # dismax=1 zimax=1 limax=4.5
         p = 0
-        if penalty_t > 0:
-            p = -10
-        q = 100 / dis_i * zi * li * (1 / Oi)
+        # if penalty_t > 0:
+        #     p = -10
+        if self.time_occu > 1:
+            p -= 25
+        q = 40 / dis_i * zi * li * (1 / Oi)
         reward = p + q
         self.tile_QoE.append(q)
-        reward = min(5, reward)
+        # reward = min(10, reward)
+        # if k==0:
+        #     rr=0.3*(li)
+        #     reward+=rr
+        #
         # reward*=10
         # self.Dmax=para.F_max*para.b_s*(para.T_slot-Tu)
         # if self.Dt>self.Dmax:
         # self.done=1
         # r=linear_normalization(self.Dt-self.Dmax) #后面再调(意思是若Dt越接近Dmax越好）
         r = 0
-        if self.Dt < self.Dmax and k == 1:
+        Dt_Dmax_nor = linear_normalization(self.Dt - self.Dmax)
+        if Dt_Dmax_nor < 0 and k == 1:
+            # if self.Dt < self.Dmax and k == 1:
             # r=abs(reward)
-            r = 5
+            # r = li+4
+            # r=0.1*(li+4)
+            r = 0.5 * li
+
+        # r =reward*li
         if k == 1 and self.Dt > self.Dmax:
-            r = -10
+            r = -5
         reward += r
 
         # self.index += 1
@@ -223,7 +237,7 @@ class subEnvironment:
             dis_i = self.ttile.dis[self.searchId[index]]
             zi = self.z[index]
             # Dt_nor=linear_normalization(self.Dt)
-            Dt_Dmax_nor = linear_normalization(self.Dt - self.Dmax)
+            # Dt_Dmax_nor = linear_normalization(self.Dt - self.Dmax)
             next_obs = np.array([self.time_occu, Dt_Dmax_nor, dis_i, zi, Oi])
         else:
             next_obs = np.array([0., 0., 0., 0., 0.])
@@ -236,10 +250,14 @@ class subEnvironment:
 
         print("tile_id：", self.fov_tile_id)
         print("distance：", self.dis)
-        O = np.array(self.ttile.O)
+        if type(self.ttile.O) == list:
+            O = np.array(self.ttile.O)
+        else:
+            O = self.ttile.O
         print("遮挡等级：", O[self.searchId])
         print("tile_datasize:", self.tile_data)
         tile_QoE = np.array(self.tile_QoE)
+        print("Tu_Td:", self.Tu_Td)
         print("time_consum:", self.time_occu)
         print("QoE:", tile_QoE)
         print("sum_QoE:", sum(self.tile_QoE), end='\n\n')

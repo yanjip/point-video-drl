@@ -15,3 +15,4 @@ import numpy as np
 # O=np.floor(p).tolist()
 # print(type(O))
 
+np.save('runs/DQN/reward.npy', np.array([1, 1, 2]))
