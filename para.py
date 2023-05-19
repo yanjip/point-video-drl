@@ -70,8 +70,8 @@ def cul_r(H_s,p):
     return np.log2(1+sinr)*B
 
 
-def fx(x):
-    return N0*(math.pow(2,x/B)-1)
+def px(x):
+    return N0 * (math.pow(2, x / B) - 1)
 
 
 # import pickle

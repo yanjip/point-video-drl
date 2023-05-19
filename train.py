@@ -9,6 +9,7 @@ import argparse
 import datetime
 from para import *
 import env
+import baseline
 import pickle
 from dqn import DQN
 from replay_buffer import N_Steps_Prioritized_ReplayBuffer
@@ -38,7 +39,9 @@ class Runner():
         self.args.state_dim = self.env.state_dim
         self.args.action_dim = self.env.action_dim
 
-        current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        # current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        current_time = datetime.datetime.now().strftime("%Y%m%d")
+
         self.train_log_dir = 'runs/DQN/' + current_time
         self.writer = SummaryWriter(log_dir=self.train_log_dir)
         self.evaluate_num = 0  # Record the number of evaluations
@@ -78,7 +81,7 @@ class Runner():
             self.epsilon_decay = (self.args.epsilon_init - self.args.epsilon_min) / self.args.epsilon_decay_steps
 
     def run(self, ):
-        self.evaluate_policy()
+        # self.evaluate_policy()
         while self.total_steps < self.args.max_train_steps:
             state = self.env.reset()
             done = False
@@ -101,21 +104,33 @@ class Runner():
                     self.agent.learn(self.replay_buffer, self.total_steps)
 
                 if self.total_steps % self.args.evaluate_freq == 0:
-                    self.evaluate_policy()
+                    # self.evaluate_policy()
+                    pass
             # Save reward
             self.writer.add_scalar('step_rewards:', episode_reward, global_step=self.total_steps)
-
         #     self.train_rewards.append(episode_reward)
         # t=np.array(self.train_rewards)
         # self.writer.add_scalar('step_rewards:', t, global_step=self.total_steps)
 
         self.writer.close()
-        np.save(self.train_log_dir + 'reward.npy', np.array(self.evaluate_rewards))
+        # np.save(self.train_log_dir + 'reward.npy', np.array(self.evaluate_rewards))
+        # torch.save(model.state_dict(), 'model.pt')
 
+        with open('runs/model/agent.pkl', 'wb') as f:
+            pickle.dump(self.agent, f)
+        self.evaluate_policy()
+
+    def greedy(self, ):
+        self.baseline = baseline.greedyMethod(ttile, fov_id)
+        self.baseline.reset()
+        for index in range(0, N_F):
+            self.baseline.step(index)
+        self.baseline.get_info()
+        pass
 
     def evaluate_policy(self, ):
         evaluate_reward = 0
-        self.agent.net.eval()  #模型不会更新参数，也不会使用一些只在训练时有效的层，例如dropout或batch normalization。这样可以提高模型的预测性能和稳定性。
+        self.agent.net.eval()  # 模型不会更新参数，也不会使用一些只在训练时有效的层，例如dropout或batch normalization。这样可以提高模型的预测性能和稳定性。
         res = []
         for i in range(self.args.evaluate_times):
             state = self.env.reset()
@@ -138,7 +153,6 @@ class Runner():
                                                                                            evaluate_reward,
                                                                                            self.epsilon))
         # self.writer.add_scalar('evaluate_rewards:', evaluate_reward, global_step=self.total_steps)
-
         # 统计结果
         new_res = []
         for a in res:
@@ -151,8 +165,6 @@ class Runner():
         self.new_res = new_res
         print(new_res)
         self.env.get_info()
-        pass
-
 
 if __name__ == '__main__':
     # 防止报错 OMP: Error #15: Initializing libiomp5md.dll, but found libiomp5md.dll already initialized.
@@ -163,27 +175,28 @@ if __name__ == '__main__':
     curr_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     parser = argparse.ArgumentParser("Hyperparameter Setting for DQN")
     # parser.add_argument("--max_train_steps", type=int, default=int(4e5), help=" Maximum number of training steps")
-    parser.add_argument("--max_train_steps", type=int, default=int(2e4), help=" Maximum number of training steps")
+    parser.add_argument("--max_train_steps", type=int, default=int(1.2e4), help=" Maximum number of training steps")
 
-    parser.add_argument("--evaluate_freq", type=float, default=1e3,
+    parser.add_argument("--evaluate_freq", type=float, default=2e3,
                         help="Evaluate the policy every 'evaluate_freq' steps")
     parser.add_argument("--evaluate_times", type=float, default=1, help="Evaluate times")
 
-    parser.add_argument("--buffer_capacity", type=int, default=int(1e5), help="The maximum replay-buffer capacity ")
-    parser.add_argument("--batch_size", type=int, default=128, help="batch size")
+    parser.add_argument("--buffer_capacity", type=int, default=int(0.6e5),
+                        help="The maximum replay-buffer capacity ")  # 原本1e5
+    parser.add_argument("--batch_size", type=int, default=256, help="batch size")
     parser.add_argument("--hidden_dim", type=int, default=256,
                         help="The number of neurons in hidden layers of the neural network")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate of actor")
     parser.add_argument("--gamma", type=float, default=0.90, help="Discount factor")
     parser.add_argument("--epsilon_init", type=float, default=0.5, help="Initial epsilon")
     parser.add_argument("--epsilon_min", type=float, default=0.1, help="Minimum epsilon")
-    parser.add_argument("--epsilon_decay_steps", type=int, default=int(0.15e5),
-                        help="How many steps before the epsilon decays to the minimum")  #原本1e5
+    parser.add_argument("--epsilon_decay_steps", type=int, default=int(0.1e5),
+                        help="How many steps before the epsilon decays to the minimum")  # 原本1e5
     parser.add_argument("--tau", type=float, default=0.005, help="soft update the target network")
     parser.add_argument("--use_soft_update", type=bool, default=True, help="Whether to use soft update")
     parser.add_argument("--target_update_freq", type=int, default=200,
                         help="Update frequency of the target network(hard update)")
-    parser.add_argument("--n_steps", type=int, default=3, help="n_steps")
+    parser.add_argument("--n_steps", type=int, default=4, help="n_steps")
     parser.add_argument("--use_lr_decay", type=bool, default=True, help="Learning rate Decay")
     parser.add_argument("--grad_clip", type=float, default=0, help="Gradient clip")  # 原本10.0
 
@@ -198,5 +211,5 @@ if __name__ == '__main__':
     fov_id = 2
 
     ttile = CustomUnpickler(open('tiles.pkl', 'rb')).load()
-    runner = Runner(args=args, seed=seed, ttile=ttile, fov_id=0)
+    runner = Runner(args=args, seed=seed, ttile=ttile, fov_id=fov_id)
     runner.run()

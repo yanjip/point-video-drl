@@ -6,24 +6,32 @@ import numpy as np
 import para
 from tiles import tile
 
+
 def linear_normalization(x):
     # return (x - min(tiles.M_all_bound)) / (max(tiles.M_all_bound) - min(tiles.M_all_bound))
     return (x - 0) / (para.bitrate - 0)
 
 
 def normalize(W):
-    W = W/np.linalg.norm(W)
+    W = W / np.linalg.norm(W)
     return W
 
 
+z = 0.5
+
+
+def fx(x):
+    return np.exp(-z * x)
+
+
 class transmission():
-    def __init__(self,p):
-        self.H_2=para.H_2
-        self.p=p
-        self.n0=para.N0
-        self.B=para.B
-        #--HMD
-        self.F_max=para.F_max
+    def __init__(self, p):
+        self.H_2 = para.H_2
+        self.p = p
+        self.n0 = para.N0
+        self.B = para.B
+        # --HMD
+        self.F_max = para.F_max
         self.b_s=para.b_s
         self.Dt=0
 
@@ -88,6 +96,8 @@ class subEnvironment:
         self.fov_tile_id = ttile.Fovs_tile_id[fov_id]
         self.dis = ttile.dis[self.fov_tile_id]
         self.z = ttile.get_z(fov_id, self.fov_tile_id)
+        self.zmin = min(self.z)
+        self.zmax = max(self.z)
         # self.Q_fov=ttile.Q[self.fov_tile_id]    #暂时没有排序的必要
 
         self.Mi = para.bitrate
@@ -117,6 +127,9 @@ class subEnvironment:
         self.get_order()
         self.get_Q()
         pass
+
+    def get_z_nor(self, zi):
+        return (zi - 0) / (self.zmax - self.zmin)
 
     def get_Q(self, ):
         Q = []
@@ -201,10 +214,12 @@ class subEnvironment:
         #     p = -10
         if self.time_occu > 1:
             p -= 25
-        q = 40 / dis_i * zi * li * (1 / Oi)
+        # q = 40 / dis_i * zi * li * (1 / Oi)
+        zi_nor = self.get_z_nor(zi)
+        q = fx(dis_i) * fx(Oi) * (zi_nor + li) * 10
         reward = p + q
         self.tile_QoE.append(q)
-        # reward = min(10, reward)
+        reward = min(15, reward)
         # if k==0:
         #     rr=0.3*(li)
         #     reward+=rr
@@ -221,7 +236,7 @@ class subEnvironment:
             # r=abs(reward)
             # r = li+4
             # r=0.1*(li+4)
-            r = 0.5 * li
+            r = 0.2 * li
 
         # r =reward*li
         if k == 1 and self.Dt > self.Dmax:
