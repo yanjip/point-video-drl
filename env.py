@@ -77,19 +77,63 @@ class transmission():
         self.Bt=para.f/para.fps-self.Td-self.Tu
         return self.Bt
 
-    def get_QoE(self,Q,Bt):
-        self.QoE=para.a1*Q+para.a2*Bt
+    def get_QoE(self, Q, Bt):
+        self.QoE = para.a1 * Q + para.a2 * Bt
         return self.QoE
 
-    def update_Dt(self,choose_Mil):
-        self.Dt+=choose_Mil
+    def update_Dt(self, choose_Mil):
+        self.Dt += choose_Mil
         return self.Dt
 
 
+class upperEnvironment():
+    def __init__(self, ttile: tile, fov_id):
+        self.state_dim = para.K * 2
+        self.action_dim = para.K
+        self.times = 30
+
+    def reset(self):
+        self.done = False
+        self.obs_Bt = np.array([para.Bt] * para.K)
+        self.obs_Q = np.array([0.0] * para.K)
+        obs = np.concatenate((self.obs_Bt, self.obs_Q), axis=0)
+        return obs
+
+    def step(self, action, index):
+        # self.obs_Bt-=(para.T_slot)
+        self.obs_Bt -= (0.1)
+
+        self.obs_Bt[self.obs_Bt < 0] = 0  # 将数组中小于0的元素赋值为0
+
+        self.obs_Bt[action] += (para.f / para.fps)
+        # 这里用下层策略 假设get_Q
+        Q = np.random.randint(120, 150) / 100
+
+        self.obs_Q[action] += Q
+        # reward=2 * sum(self.obs_Q)+ 1 * sum(self.obs_Bt)
+        reward = 0
+        n_zeros = np.count_nonzero(self.obs_Bt == 0)  # 统计数组中等于0的元素的个数
+        penaty = n_zeros * 2
+
+        # 计算Q的方差，不宜过大
+        # dis=max(self.obs_Q)-min(self.obs_Q)
+        dis = np.var(self.obs_Q) + np.var(self.obs_Bt) * 2
+        penaty += dis
+
+        reward -= penaty
+
+        if index >= self.times:
+            self.done = True
+        self.next_obs = np.concatenate((self.obs_Bt, self.obs_Q), axis=0)
+
+        return self.next_obs, reward, self.done, None
+
+    def get_info(self, ):
+        return self.next_obs
 
 
 class subEnvironment:
-    def __init__(self, seed,ttile:tile,fov_id):
+    def __init__(self, seed, ttile: tile, fov_id):
         self.fov_id = fov_id
         self.ttile = ttile
         self.fov = ttile.Fovs_tile_id[fov_id]

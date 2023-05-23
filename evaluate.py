@@ -35,57 +35,16 @@ class CustomUnpickler(pickle.Unpickler):
 class Runner():
     def __init__(self, args, ttile: tile, fov_id):
         self.args = args
-        # self.seed = seed
-        # np.random.seed(seed)
-        # torch.manual_seed(seed)
-
         self.env = env.subEnvironment(1, ttile, fov_id)
         self.args.state_dim = self.env.state_dim
         self.args.action_dim = self.env.action_dim
-
-        # current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        current_time = datetime.datetime.now().strftime("%Y%m%d")
-
-        self.train_log_dir = 'runs/DQN/' + current_time
-        self.writer = SummaryWriter(log_dir=self.train_log_dir)
-        self.evaluate_num = 0  # Record the number of evaluations
-        self.evaluate_rewards = []  # Record the rewards during the evaluating
-        self.total_steps = 0  # Record the total steps during the training
-        self.epsilon = self.args.epsilon_init
-        self.epsilon_min = self.args.epsilon_min
-        self.epsilon_decay = (self.args.epsilon_init - self.args.epsilon_min) / self.args.epsilon_decay_steps
-
-        self.replay_buffer = N_Steps_Prioritized_ReplayBuffer(args)
 
         with open('runs/model/agent.pkl', 'rb') as f:
             agent = pickle.load(f)
 
         self.agent = agent
 
-        self.algorithm = 'DQN'
-        if args.use_double:
-            self.algorithm += '_Double'
-        if args.use_dueling:
-            self.algorithm += '_Dueling'
-        if args.use_noisy:
-            self.algorithm += '_Noisy'
-        if args.use_per:
-            self.algorithm += '_PER'
-        if args.use_n_steps:
-            self.algorithm += "_N_steps"
         # self.writer = SummaryWriter(log_dir='runs/DQN_{}/seed_{}'.format(self.algorithm,  seed))
-
-        self.evaluate_num = 0  # Record the number of evaluations
-        self.evaluate_rewards = []  # Record the rewards during the evaluating
-        self.train_rewards = []  # Record the rewards during the evaluating
-
-        self.total_steps = 0  # Record the total steps during the training
-        if args.use_noisy:  # 如果使用Noisy net，就不需要epsilon贪心策略了
-            self.epsilon = 0
-        else:
-            self.epsilon = self.args.epsilon_init
-            self.epsilon_min = self.args.epsilon_min
-            self.epsilon_decay = (self.args.epsilon_init - self.args.epsilon_min) / self.args.epsilon_decay_steps
 
     def evaluate_online(self, ):
 
@@ -110,9 +69,7 @@ class Runner():
             # self.evaluate_rewards.append(evaluate_reward)
             # print("###########     {}     ###########\n".format(evaluate_reward))
             r = episode_reward
-            print("-----------------total_steps:{} \t evaluate_reward:{} \t epsilon：{}".format(self.total_steps,
-                                                                                               episode_reward,
-                                                                                               self.epsilon))
+            print("-----------------\t evaluate_reward:{} \t".format(episode_reward))
             # 统计结果
             new_res = []
             for a in res:
@@ -147,37 +104,6 @@ if __name__ == '__main__':
     curr_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     parser = argparse.ArgumentParser("Hyperparameter Setting for DQN")
     # parser.add_argument("--max_train_steps", type=int, default=int(4e5), help=" Maximum number of training steps")
-    parser.add_argument("--max_train_steps", type=int, default=int(1.2e4), help=" Maximum number of training steps")
-
-    parser.add_argument("--evaluate_freq", type=float, default=2e3,
-                        help="Evaluate the policy every 'evaluate_freq' steps")
-    parser.add_argument("--evaluate_times", type=float, default=1, help="Evaluate times")
-
-    parser.add_argument("--buffer_capacity", type=int, default=int(0.6e5),
-                        help="The maximum replay-buffer capacity ")  # 原本1e5
-    parser.add_argument("--batch_size", type=int, default=256, help="batch size")
-    parser.add_argument("--hidden_dim", type=int, default=256,
-                        help="The number of neurons in hidden layers of the neural network")
-    parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate of actor")
-    parser.add_argument("--gamma", type=float, default=0.90, help="Discount factor")
-    parser.add_argument("--epsilon_init", type=float, default=0.5, help="Initial epsilon")
-    parser.add_argument("--epsilon_min", type=float, default=0.1, help="Minimum epsilon")
-    parser.add_argument("--epsilon_decay_steps", type=int, default=int(0.1e5),
-                        help="How many steps before the epsilon decays to the minimum")  # 原本1e5
-    parser.add_argument("--tau", type=float, default=0.005, help="soft update the target network")
-    parser.add_argument("--use_soft_update", type=bool, default=True, help="Whether to use soft update")
-    parser.add_argument("--target_update_freq", type=int, default=200,
-                        help="Update frequency of the target network(hard update)")
-    parser.add_argument("--n_steps", type=int, default=4, help="n_steps")
-    parser.add_argument("--use_lr_decay", type=bool, default=True, help="Learning rate Decay")
-    parser.add_argument("--grad_clip", type=float, default=0, help="Gradient clip")  # 原本10.0
-
-    parser.add_argument("--use_double", type=bool, default=True, help="Whether to use double Q-learning")
-    parser.add_argument("--use_dueling", type=bool, default=False, help="Whether to use dueling network")
-    parser.add_argument("--use_noisy", type=bool, default=False, help="Whether to use noisy network")
-    parser.add_argument("--use_per", type=bool, default=True, help="Whether to use PER")
-    parser.add_argument("--use_n_steps", type=bool, default=True, help="Whether to use n_steps Q-learning")
-
     args = parser.parse_args()
     # seed = 3
 
@@ -185,14 +111,16 @@ if __name__ == '__main__':
 
     writer2 = SummaryWriter(log_dir='runs/evaluate')
 
-    # for i in range(30):
-    #     fov_id = np.random.randint(0,N_fovs)
-    #     print(fov_id)
-    #     runner = Runner(args=args, ttile=ttile, fov_id=fov_id)
-    #     # runner.run()
-    #
-    #     episode_reward=runner.evaluate_online()
-    #     writer2.add_scalar('evaluate_rewards:', episode_reward, global_step=i+1)
+    # 测试加载训练好的agent
+    for i in range(30):
+        fov_id = np.random.randint(0, N_fovs)
+        print(fov_id)
+        runner = Runner(args=args, ttile=ttile, fov_id=fov_id)
+        # runner.run()
 
-    runner = Runner(args=args, ttile=ttile, fov_id=3)
-    runner.greedy(fov_id=3)
+        episode_reward = runner.evaluate_online()
+        writer2.add_scalar('evaluate_rewards:', episode_reward, global_step=i + 1)
+
+    # 测试baseline
+    # runner = Runner(args=args, ttile=ttile, fov_id=3)
+    # runner.greedy(fov_id=3)

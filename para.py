@@ -57,16 +57,13 @@ F_max = 0.3e8  # cycles/s MEC那篇论文
 b_s = 0.04e3  # bits/cycle  MEC   之前0.02
 D_max = 1 * GB  # HMD的处理区数据量大小
 
-QoE0 =10
+K = 5
+Bt = 2.0  # 设备的初始化视频缓冲区
+QoE0 = 10
 
 
-
-
-
-
-
-def cul_r(H_s,p):
-    sinr=sum(H_s)/N0*p
+def cul_r(H_s, p):
+    sinr = sum(H_s) / N0 * p
     return np.log2(1+sinr)*B
 
 
