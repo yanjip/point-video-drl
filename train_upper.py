@@ -102,8 +102,8 @@ class Runner():
         # np.save(self.train_log_dir + 'reward.npy', np.array(self.evaluate_rewards))
         # torch.save(model.state_dict(), 'model.pt')
 
-        # with open('runs/model/agent.pkl', 'wb') as f:
-        #     pickle.dump(self.agent, f)
+        with open('runs/model/agent_upper_K5_T100ms.pkl', 'wb') as f:
+            pickle.dump(self.agent_upper, f)
         # self.evaluate_policy()
 
     def greedy(self, ):

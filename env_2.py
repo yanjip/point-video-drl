@@ -2,6 +2,8 @@
 @Author  ：Yan JP
 @Created on Date：2023/5/17 13:58 
 '''
+# 没有upperEnv
+
 import numpy as np
 import para
 from tiles import tile

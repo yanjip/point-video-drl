@@ -43,6 +43,7 @@ class Runner():
         current_time = datetime.datetime.now().strftime("%Y%m%d")
 
         self.train_log_dir = 'runs/DQN/' + current_time
+        # os.makedirs(self.train_log_dir, exist_ok=True)
         self.writer = SummaryWriter(log_dir=self.train_log_dir)
         self.evaluate_num = 0  # Record the number of evaluations
         self.evaluate_rewards = []  # Record the rewards during the evaluating
@@ -116,8 +117,9 @@ class Runner():
         # np.save(self.train_log_dir + 'reward.npy', np.array(self.evaluate_rewards))
         # torch.save(model.state_dict(), 'model.pt')
 
-        with open('runs/model/agent.pkl', 'wb') as f:
-            pickle.dump(self.agent, f)
+        # 保存 agent
+        # with open('runs/model/agent.pkl', 'wb') as f:
+        #     pickle.dump(self.agent, f)
         self.evaluate_policy()
 
     def greedy(self, ):

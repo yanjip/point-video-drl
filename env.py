@@ -13,7 +13,7 @@ def linear_normalization(x):
 
 
 def normalize(W):
-    W = W / np.linalg.norm(W)
+    W = W / np.linalg.norm(W, axis=0)  # 列归一化，不用reshape
     return W
 
 
@@ -24,6 +24,69 @@ def fx(x):
     return np.exp(-z * x)
 
 
+class upperEnvironmentBeam():
+    def __init__(self):
+        self.state_dim = para.K
+        self.action_dim = para.K * para.N_aps
+        self.times = 1000
+        self.actionLow = 0
+        self.actionHigh = np.sqrt(para.maxPower)
+
+        self.G = np.random.exponential(scale=1.0, size=(para.K, para.N_aps)).astype('float32')
+        self.G = self.G[:, np.argsort(self.G.sum(axis=0))]
+
+        W = np.random.uniform(high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
+        # W = normalize(W)
+        self.W = W
+
+        pass
+
+    def normalizedActions(self, action):
+        action = self.actionLow + (action + 1) * 0.5 * (self.actionHigh - self.actionLow)
+        action = np.clip(action, self.actionLow, self.actionHigh)
+        return action
+
+    def reverse_action(self, action):
+        action = 2 * (action - self.actionLow) / (self.actionHigh - self.actionLow) - 1
+        action = np.clip(action, self.actionLow, self.actionHigh)
+        return action
+
+    def sinr(self, ):
+        W2 = np.square(self.W)
+        gamma = np.zeros(para.K, dtype='float32')
+        for k in range(para.K):
+            numerator = np.dot(self.G[k:].reshape(1, para.N_aps), W2[k, :].reshape(para.N_aps, 1))
+            interference = 0
+            for k1 in range(para.K):
+                if k != k1:
+                    interference += np.dot(self.G[k1:].reshape(1, para.N_aps), W2[k, :].reshape(para.N_aps, 1))
+            denom = interference
+            gamma[k] = numerator / denom
+        return gamma.astype(np.float32)
+
+    def reset(self):
+        W = np.random.uniform(high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
+        # W = normalize(W)
+        self.W = W
+        return self.sinr()
+
+    def step(self, action_t):
+        self.W = action_t.reshape(para.K, para.N_aps)
+        next_state = self.sinr()
+        reward = np.sum(np.log2(1 + next_state))
+
+        done = 0.0
+        return next_state, reward, np.float32(done), None
+
+        pass
+
+    def check_power(self):
+        sum_of_columns = np.sum(np.square(self.W), axis=0)
+        p = 0
+        for i in sum_of_columns:
+            p += max(0, i - para.maxPower)
+        return p
+        pass
 class transmission():
     def __init__(self, p):
         self.H_2 = para.H_2
