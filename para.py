@@ -62,9 +62,9 @@ Bt = 2.0  # 设备的初始化视频缓冲区
 QoE0 = 10
 
 # upper para
-maxPower = 4.0
+maxPower = 8.0
 area_size = 500
-max_timestamp = 200
+max_timestamp = 50
 
 
 def cul_r(H_s, p):

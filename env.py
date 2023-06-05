@@ -55,12 +55,14 @@ class upperEnvironmentBeam():
         W2 = np.square(self.W)
         gamma = np.zeros(para.K, dtype='float32')
         for k in range(para.K):
-            numerator = np.dot(self.G[k:].reshape(1, para.N_aps), W2[k, :].reshape(para.N_aps, 1))
+            numerator = np.dot(self.G[k, :].reshape(1, para.N_aps), W2[k, :].reshape(para.N_aps, 1))
             interference = 0
             for k1 in range(para.K):
                 if k != k1:
-                    interference += np.dot(self.G[k1:].reshape(1, para.N_aps), W2[k, :].reshape(para.N_aps, 1))
+                    interference += np.dot(self.G[k1, :].reshape(1, para.N_aps), W2[k, :].reshape(para.N_aps, 1))
             denom = interference
+            if denom == 0:
+                denom += 1e-8
             gamma[k] = numerator / denom
         return gamma.astype(np.float32)
 
@@ -73,7 +75,10 @@ class upperEnvironmentBeam():
     def step(self, action_t):
         self.W = action_t.reshape(para.K, para.N_aps)
         next_state = self.sinr()
-        reward = np.sum(np.log2(1 + next_state))
+        reward = np.sum(np.log2(1 + next_state)) / 2
+        punish = self.check_power()
+        if punish > 0:
+            reward -= 5
 
         done = 0.0
         return next_state, reward, np.float32(done), None
@@ -84,6 +89,8 @@ class upperEnvironmentBeam():
         sum_of_columns = np.sum(np.square(self.W), axis=0)
         p = 0
         for i in sum_of_columns:
+            # if i - para.maxPower>0:
+            #     print("hello")
             p += max(0, i - para.maxPower)
         return p
         pass

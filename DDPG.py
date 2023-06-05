@@ -13,6 +13,7 @@ import argparse
 import datetime
 import time
 import gym
+import random
 import torch.optim as optim
 import torch.nn.functional as F
 from torch import nn
@@ -38,7 +39,7 @@ import para
 
 
 class OUNoise(object):
-    def __init__(self, action_space, mu=0.0, theta=0.15, max_sigma=0.3, min_sigma=0.3, decay_period=100000):
+    def __init__(self, action_space, mu=0.0, theta=0.15, max_sigma=0.8, min_sigma=0.3, decay_period=1000):  # 原本100000
         self.mu = mu  # OU噪声的参数
         self.theta = theta  # OU噪声的参数
         self.sigma = max_sigma  # OU噪声的参数
@@ -133,6 +134,7 @@ class Critic(nn.Module):
 # 深度确定性策略梯度算法对象
 class DDPG:
     def __init__(self, n_states, n_actions, arg_dict):
+        self.var = arg_dict['var']
         self.device = torch.device(arg_dict['device'])
         # DDPG要训练四个网络：Q网络，Q-target网络，策略网络，策略-target网络
         self.critic = Critic(n_states, n_actions, arg_dict['hidden_dim']).to(self.device)
@@ -157,11 +159,12 @@ class DDPG:
     def choose_action(self, state):
         state = torch.FloatTensor(state).unsqueeze(0).to(self.device)
         action = self.actor(state)
-        return action.detach().cpu().numpy()[0, 0]
+        return action.detach().cpu().numpy()[0]
 
     def update(self):
         if len(self.memory) < self.batch_size:  # 当 memory 中不满足一个批量时，不更新策略
             return
+        self.var *= 0.995
         # 从经验回放中(replay memory)中随机采样一个批量的转移(transition)
         state, action, reward, next_state, done = self.memory.sample(self.batch_size)
         # 转变为张量
@@ -205,4 +208,4 @@ class DDPG:
 
     def load_model(self, path):
 
-        self.actor.load_state_dict(torch.load(path + 'upper_agent.pt'))
+        self.actor.load_state_dict(torch.load(path))
