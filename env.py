@@ -30,10 +30,11 @@ class upperEnvironmentBeam():
         self.action_dim = para.K * para.N_aps
         self.times = 1000
         self.actionLow = 0
-        self.actionHigh = np.sqrt(para.maxPower)
+        # self.actionHigh = np.sqrt(para.maxPower)
+        self.actionHigh = 1
 
         self.G = np.random.exponential(scale=1.0, size=(para.K, para.N_aps)).astype('float32')
-        self.G = self.G[:, np.argsort(self.G.sum(axis=0))]
+        # self.G = self.G[:, np.argsort(self.G.sum(axis=0))]
 
         W = np.random.uniform(high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
         # W = normalize(W)
@@ -55,35 +56,40 @@ class upperEnvironmentBeam():
         W2 = np.square(self.W)
         gamma = np.zeros(para.K, dtype='float32')
         for k in range(para.K):
-            numerator = np.dot(self.G[k, :].reshape(1, para.N_aps), W2[k, :].reshape(para.N_aps, 1))
+            numerator = np.dot(self.G[k, :].reshape(1, para.N_aps), self.W[k, :].reshape(para.N_aps, 1))
+            numerator = np.square(np.linalg.norm(numerator))
+
             interference = 0
             for k1 in range(para.K):
                 if k != k1:
-                    interference += np.dot(self.G[k1, :].reshape(1, para.N_aps), W2[k, :].reshape(para.N_aps, 1))
+                    interference += np.dot(self.G[k1, :].reshape(1, para.N_aps), self.W[k, :].reshape(para.N_aps, 1))
+                    interference = np.square(np.linalg.norm(interference))
             denom = interference
             if denom == 0:
                 denom += 1e-8
-            gamma[k] = numerator / denom
+            gamma[k] = numerator / denom * np.sqrt(para.maxPower)
         return gamma.astype(np.float32)
 
     def reset(self):
-        W = np.random.uniform(high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
+        W = np.random.uniform(high=1, size=(para.K, para.N_aps)).astype('float32')
         # W = normalize(W)
         self.W = W
         return self.sinr()
 
     def step(self, action_t):
         self.W = action_t.reshape(para.K, para.N_aps)
+        norm = np.linalg.norm(self.W, axis=0)
+        if 0.0 in norm:
+            norm = norm + 1e-4
+        self.W = self.W / norm
+
         next_state = self.sinr()
         reward = np.sum(np.log2(1 + next_state)) / 2
-        punish = self.check_power()
-        if punish > 0:
-            reward -= 5
-
+        punish = self.check_power() / 2
+        # if punish > 0:
+        #     reward -= 5
         done = 0.0
         return next_state, reward, np.float32(done), None
-
-        pass
 
     def check_power(self):
         sum_of_columns = np.sum(np.square(self.W), axis=0)
@@ -94,6 +100,24 @@ class upperEnvironmentBeam():
             p += max(0, i - para.maxPower)
         return p
         pass
+
+    def get_final_res(self, ):
+        sinr = self.sinr()
+        sum_sinr = np.sum(np.log2(1 + sinr))
+        return sum_sinr
+
+    def baseline_random(self, ):
+        ddpg_sinr = self.get_final_res()
+        self.base1 = np.random.uniform(high=1, size=(para.K, para.N_aps)).astype('float32')
+        norm = np.linalg.norm(self.base1, axis=0)
+        if 0.0 in norm:
+            norm = norm + 1e-4
+        self.base1 = self.base1 / norm
+        self.W = self.base1
+        base_sinr = self.get_final_res()
+        return ddpg_sinr, base_sinr
+
+
 class transmission():
     def __init__(self, p):
         self.H_2 = para.H_2
@@ -102,7 +126,7 @@ class transmission():
         self.B = para.B
         # --HMD
         self.F_max = para.F_max
-        self.b_s=para.b_s
+        self.b_s = para.b_s
         self.Dt=0
 
         self.get_rt()

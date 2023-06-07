@@ -39,7 +39,7 @@ import para
 
 
 class OUNoise(object):
-    def __init__(self, action_space, mu=0.0, theta=0.15, max_sigma=0.8, min_sigma=0.3, decay_period=1000):  # 原本100000
+    def __init__(self, action_space, mu=0.0, theta=0.15, max_sigma=0.3, min_sigma=0.3, decay_period=1000):  # 原本100000
         self.mu = mu  # OU噪声的参数
         self.theta = theta  # OU噪声的参数
         self.sigma = max_sigma  # OU噪声的参数
@@ -48,8 +48,10 @@ class OUNoise(object):
         self.decay_period = decay_period
         self.n_actions = action_space
         self.low = 0
-        self.high = np.sqrt(para.maxPower)
+        # self.high = np.sqrt(para.maxPower)
+        self.high = 1
         self.reset()
+        self.eps = 0.99
 
     def reset(self):
         self.obs = np.ones(self.n_actions) * self.mu
@@ -62,6 +64,8 @@ class OUNoise(object):
 
     def get_action(self, action, t=0):
         ou_obs = self.evolve_obs()
+        # self.sigma*=self.eps
+        # self.sigma = max(self.min_sigma, self.sigma * self.eps)
         self.sigma = self.max_sigma - (self.max_sigma - self.min_sigma) * min(1.0, t / self.decay_period)  # sigma会逐渐衰减
         return np.clip(action + ou_obs, self.low, self.high)  # 动作加上噪声后进行剪切
 
@@ -106,7 +110,8 @@ class Actor(nn.Module):
     def forward(self, x):
         x = F.relu(self.linear1(x))
         x = F.relu(self.linear2(x))
-        x = torch.tanh(self.linear3(x))
+        # x = torch.tanh(self.linear3(x))
+        x = torch.sigmoid_(self.linear3(x))
         return x
 
 
@@ -164,7 +169,7 @@ class DDPG:
     def update(self):
         if len(self.memory) < self.batch_size:  # 当 memory 中不满足一个批量时，不更新策略
             return
-        self.var *= 0.995
+        # self.var =max(0.2,self.var* 0.9995)
         # 从经验回放中(replay memory)中随机采样一个批量的转移(transition)
         state, action, reward, next_state, done = self.memory.sample(self.batch_size)
         # 转变为张量
@@ -178,7 +183,9 @@ class DDPG:
         policy_loss = -policy_loss.mean()
         next_action = self.target_actor(next_state)
         target_value = self.target_critic(next_state, next_action.detach())
-        expected_value = reward + (1.0 - done) * self.gamma * target_value
+        # expected_value = reward + (1.0 - done) * self.gamma * target_value
+        expected_value = reward + self.gamma * target_value
+
         expected_value = torch.clamp(expected_value, -np.inf, np.inf)
 
         value = self.critic(state, action)

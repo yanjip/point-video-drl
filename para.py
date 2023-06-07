@@ -64,7 +64,7 @@ QoE0 = 10
 # upper para
 maxPower = 8.0
 area_size = 500
-max_timestamp = 50
+max_timestamp = 80
 
 
 def cul_r(H_s, p):
