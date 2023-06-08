@@ -17,7 +17,7 @@ KHZ = 1e3
 MHZ = KHZ*1e3
 GHZ = MHZ*1e3
 
-N_aps = 4  # APs
+N_aps = 5  # APs
 
 # Channels
 B = 100*MHZ  # MHz
@@ -64,7 +64,7 @@ QoE0 = 10
 # upper para
 maxPower = 8.0
 area_size = 500
-max_timestamp = 80
+max_timestamp = 70
 
 
 def cul_r(H_s, p):

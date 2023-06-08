@@ -38,7 +38,9 @@ class upperEnvironmentBeam():
 
         W = np.random.uniform(high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
         # W = normalize(W)
-        self.W = W
+        self.W = self.normalizeW(W)
+        # 测试固定
+        self.fix_W = self.W
 
         pass
 
@@ -51,6 +53,13 @@ class upperEnvironmentBeam():
         action = 2 * (action - self.actionLow) / (self.actionHigh - self.actionLow) - 1
         action = np.clip(action, self.actionLow, self.actionHigh)
         return action
+
+    def normalizeW(self, W):
+        norm = np.linalg.norm(W, axis=0)
+        if 0.0 in norm:
+            norm = norm + 1e-4
+        W = W / norm
+        return W
 
     def sinr(self, ):
         W2 = np.square(self.W)
@@ -72,19 +81,18 @@ class upperEnvironmentBeam():
 
     def reset(self):
         W = np.random.uniform(high=1, size=(para.K, para.N_aps)).astype('float32')
-        # W = normalize(W)
-        self.W = W
+        self.W = self.normalizeW(W)
+        # -----下面是另一种方法
+        self.W = self.fix_W
         return self.sinr()
 
     def step(self, action_t):
         self.W = action_t.reshape(para.K, para.N_aps)
-        norm = np.linalg.norm(self.W, axis=0)
-        if 0.0 in norm:
-            norm = norm + 1e-4
-        self.W = self.W / norm
+        self.W = self.normalizeW(self.W)
 
         next_state = self.sinr()
-        reward = np.sum(np.log2(1 + next_state)) / 2
+        reward = np.sum(np.log2(1 + next_state))
+        reward -= para.K
         punish = self.check_power() / 2
         # if punish > 0:
         #     reward -= 5
