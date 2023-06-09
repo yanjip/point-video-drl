@@ -48,7 +48,7 @@ def train(arg_dict, env_beam, agent):
             # if timestamp >= para.max_timestamp and env_beam.check_power() == 0:
             if timestamp >= para.max_timestamp:
                 done = np.float32(1.0)
-                reward *= 10
+                # reward *= 10
             ep_reward += reward
             agent.memory.push(state, action, reward, next_state, done)
             agent.update()
@@ -58,7 +58,7 @@ def train(arg_dict, env_beam, agent):
         if (i_ep + 1) % 2 == 0:
             # print("W:",env_beam.W)
             print(
-                f'Env_beam:{i_ep + 1}/{arg_dict["train_eps"]}, Reward:{ep_reward :.2f},SINR:{next_state},sigma:{ou_noise.sigma}')
+                f'Env_beam:{i_ep + 1}/{arg_dict["train_eps"]}, Reward:{ep_reward :.2f},SINR:{next_state[-para.K:]},sigma:{ou_noise.sigma}')
             # print(f'Env_beam:{i_ep + 1}/{arg_dict["train_eps"]}, Reward:{ep_reward :.2f}')
             d, b = env_beam.baseline_random()
             print(f'DDPG:{d},*******,baseline:{b}')
@@ -107,7 +107,7 @@ def test(arg_dict, env_beam, agent):
             ma_rewards.append(0.9 * ma_rewards[-1] + 0.1 * ep_reward)
         else:
             ma_rewards.append(ep_reward)
-        print(f"Epside:{i_ep + 1}/{arg_dict['test_eps']}, Reward:{ep_reward:.1f},SINR:{next_state}")
+        print(f"Epside:{i_ep + 1}/{arg_dict['test_eps']}, Reward:{ep_reward:.1f},SINR:{next_state[-para.K:]}")
         d, b = env_beam.baseline_random()
         print(f'DDPG:{d},*******,baseline:{b}')
         print("*" * 60)
@@ -126,8 +126,8 @@ if __name__ == '__main__':
     # 相关参数设置
     parser = argparse.ArgumentParser(description="hyper parameters")
     parser.add_argument('--algo_name', default='DDPG', type=str, help="name of algorithm")
-    parser.add_argument('--train_eps', default=300, type=int, help="episodes of training")  # 原本300
-    parser.add_argument('--test_eps', default=50, type=int, help="episodes of testing")
+    parser.add_argument('--train_eps', default=200, type=int, help="episodes of training")  # 原本300
+    parser.add_argument('--test_eps', default=70, type=int, help="episodes of testing")
     parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
     parser.add_argument('--critic_lr', default=1e-3, type=float, help="learning rate of critic")
     parser.add_argument('--actor_lr', default=1e-4, type=float, help="learning rate of actor")

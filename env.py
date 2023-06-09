@@ -19,7 +19,10 @@ def normalize(W):
 
 z = 0.5
 def simulate_channel_response(num_users, num_antennas):
-    h = np.sqrt(0.5) * (np.random.randn(num_users, num_antennas) + 1j * np.random.randn(num_users, num_antennas))
+    r = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
+    i = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
+
+    h = np.sqrt(0.5) * r + 1j * i
     return h
 
 
@@ -29,6 +32,8 @@ def fx(x):
 
 class upperEnvironmentBeam():
     def __init__(self):
+        # self.state_dim = para.K
+        # self.state_dim =para.K*para.N_aps*2+para.K
         self.state_dim = para.K
         self.action_dim = para.K * para.N_aps * 2
         self.times = 1000
@@ -45,13 +50,12 @@ class upperEnvironmentBeam():
         self.W = self.normalizeW(self.W)
         # 测试固定
         self.fix_W = self.W
-
         pass
 
     def get_initW(self, ):
-        G = np.random.uniform(low=-1.0, high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
-        G2 = np.random.uniform(low=-1.0, high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
-        return G + (1j * G2)
+        self.W1 = np.random.uniform(low=-1.0, high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
+        self.W2 = np.random.uniform(low=-1.0, high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
+        return self.W1 + (1j * self.W2)
 
     def normalizeW(self, W):
         norm = np.linalg.norm(W, axis=0)
@@ -80,29 +84,47 @@ class upperEnvironmentBeam():
 
     def reset(self):
         # self.G=simulate_channel_response(para.K,para.N_aps)
+        # self.G_square=np.linalg.norm(self.G,axis=1)
+        # self.G_denom=np.sum(np.square(self.G_square))
 
-        W = np.random.uniform(high=1, size=(para.K, para.N_aps)).astype('float32')
-        self.W = self.normalizeW(W)
+        # W = np.random.uniform(high=1, size=(para.K, para.N_aps)).astype('float32')
+
+        # W=self.get_initW()
+        # self.W = self.normalizeW(W)
         # -----下面是另一种方法
         self.W = self.fix_W
-        return self.sinr()
+        self.SEmax = 0
 
+        # return np.hstack((self.G1.flatten(),self.G2.flatten(),self.sinr()))
+        return self.sinr()
+        # return np.hstack((self.G_square.flatten(),self.sinr()))
+        # return np.hstack((self.SEmax,self.sinr()))
     def step(self, action_t):
         # self.W = action_t.reshape(para.K, para.N_aps)
         self.W = self.reshapeAction(action_t)
         self.W = self.normalizeW(self.W)
 
         next_state = self.sinr()
-        reward = np.sum(np.log2(1 + next_state))
-        reward -= para.K
+        # next_state = np.hstack((self.G1.flatten(),self.G2.flatten(),self.sinr()))
+        # next_state= np.hstack((self.G_square.flatten(),self.sinr()))
+        # next_state= np.hstack((self.SEmax,self.sinr()))
+
+        reward = (np.sum(np.log2(1 + next_state[-para.K:])))
+        # self.SEmax=max(self.SEmax,reward)
+        # if reward<self.SEmax:
+        #     reward=0
+        if reward > self.SEmax:
+            self.SEmax = reward
+            self.best_sinr = next_state
+        # else: reward/=10
+        # reward -= para.K
         # reward/=para.K
-        punish = self.check_power() / 2
+        # punish = self.check_power() / 2
         # if punish > 0:
         #     reward -= 5
         # -------解决UE3太小的问题
         # p_var=np.var(next_state)
         # reward-=p_var
-
         done = 0.0
         return next_state, reward / 10, np.float32(done), None
         # return next_state, reward , np.float32(done), None
@@ -115,15 +137,6 @@ class upperEnvironmentBeam():
         W = np.reshape(W, (para.K, para.N_aps))
         return W
 
-    def check_power(self):
-        sum_of_columns = np.sum(np.square(self.W), axis=0)
-        p = 0
-        for i in sum_of_columns:
-            # if i - para.maxPower>0:
-            #     print("hello")
-            p += max(0, i - para.maxPower)
-        return p
-        pass
 
     def get_final_res(self, ):
         sinr = self.sinr()
@@ -131,7 +144,7 @@ class upperEnvironmentBeam():
         return sum_sinr
 
     def baseline_random(self, ):
-        ddpg_sinr = self.get_final_res()
+        ddpg_sinr = self.SEmax
         # self.base1 = np.random.uniform(high=1, size=(para.K, para.N_aps)).astype('float32')
         self.base1 = self.get_initW()
 

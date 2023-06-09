@@ -45,9 +45,9 @@ class OUNoise(object):
         self.sigma = max_sigma  # OU噪声的参数
         self.max_sigma = max_sigma
         self.min_sigma = min_sigma
-        self.decay_period = decay_period - 60
+        self.decay_period = decay_period - 50
         self.n_actions = action_space
-        self.low = 0
+        self.low = -1
         # self.high = np.sqrt(para.maxPower)
         self.high = 1
         self.reset()
@@ -110,8 +110,8 @@ class Actor(nn.Module):
     def forward(self, x):
         x = F.relu(self.linear1(x))
         x = F.relu(self.linear2(x))
-        # x = torch.tanh(self.linear3(x))
-        x = torch.sigmoid(self.linear3(x))
+        x = torch.tanh(self.linear3(x))
+        # x = torch.sigmoid(self.linear3(x))
         return x
 
 
