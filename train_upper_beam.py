@@ -102,14 +102,19 @@ def test(arg_dict, env_beam, agent):
             state = next_state
         # if (i_ep + 1) % 2 == 0:
         #     print(f'Env_beam:{i_ep + 1}/{arg_dict["test_eps"]}, Reward:{ep_reward:.2f}')
-        rewards.append(ep_reward)
-        if ma_rewards:
-            ma_rewards.append(0.9 * ma_rewards[-1] + 0.1 * ep_reward)
-        else:
-            ma_rewards.append(ep_reward)
+        # rewards.append(ep_reward)
+        # if ma_rewards:
+        #     ma_rewards.append(0.9 * ma_rewards[-1] + 0.1 * ep_reward)
+        # else:
+        #     ma_rewards.append(ep_reward)
         print(f"Epside:{i_ep + 1}/{arg_dict['test_eps']}, Reward:{ep_reward:.1f},SINR:{next_state[-para.K:]}")
         d, b = env_beam.baseline_random()
         print(f'DDPG:{d},*******,baseline:{b}')
+        rewards.append(d)
+        if ma_rewards:
+            ma_rewards.append(0.9 * ma_rewards[-1] + 0.1 * d)
+        else:
+            ma_rewards.append(d)
         print("*" * 60)
 
     print("测试结束 , 用时: " + str(time.time() - startTime) + " s")
@@ -126,7 +131,7 @@ if __name__ == '__main__':
     # 相关参数设置
     parser = argparse.ArgumentParser(description="hyper parameters")
     parser.add_argument('--algo_name', default='DDPG', type=str, help="name of algorithm")
-    parser.add_argument('--train_eps', default=200, type=int, help="episodes of training")  # 原本300
+    parser.add_argument('--train_eps', default=150, type=int, help="episodes of training")  # 原本300
     parser.add_argument('--test_eps', default=70, type=int, help="episodes of testing")
     parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
     parser.add_argument('--critic_lr', default=1e-3, type=float, help="learning rate of critic")

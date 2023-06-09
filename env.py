@@ -32,9 +32,9 @@ def fx(x):
 
 class upperEnvironmentBeam():
     def __init__(self):
-        # self.state_dim = para.K
-        # self.state_dim =para.K*para.N_aps*2+para.K
         self.state_dim = para.K
+        # self.state_dim =para.K*para.N_aps*2+para.K
+        # self.state_dim = para.K
         self.action_dim = para.K * para.N_aps * 2
         self.times = 1000
         self.actionLow = 0
@@ -43,7 +43,7 @@ class upperEnvironmentBeam():
 
         # self.G = np.random.exponential(scale=1.0, size=(para.K, para.N_aps)).astype('float32')
         # self.G = self.G[:, np.argsort(self.G.sum(axis=0))]
-        self.G = simulate_channel_response(para.K, para.N_aps)
+        self.G = self.simulate_channel_response(para.K, para.N_aps)
 
         # W = np.random.uniform(high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
         self.W = self.get_initW()
@@ -51,6 +51,13 @@ class upperEnvironmentBeam():
         # 测试固定
         self.fix_W = self.W
         pass
+
+    def simulate_channel_response(self, num_users, num_antennas):
+        self.r = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
+        self.i = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
+
+        h = np.sqrt(0.5) * self.r + 1j * self.i
+        return h
 
     def get_initW(self, ):
         self.W1 = np.random.uniform(low=-1.0, high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
@@ -83,7 +90,7 @@ class upperEnvironmentBeam():
         return gamma.astype(np.float32)
 
     def reset(self):
-        # self.G=simulate_channel_response(para.K,para.N_aps)
+        # self.G=self.simulate_channel_response(para.K,para.N_aps)
         # self.G_square=np.linalg.norm(self.G,axis=1)
         # self.G_denom=np.sum(np.square(self.G_square))
 
@@ -91,12 +98,11 @@ class upperEnvironmentBeam():
 
         # W=self.get_initW()
         # self.W = self.normalizeW(W)
-        # -----下面是另一种方法
         self.W = self.fix_W
         self.SEmax = 0
 
-        # return np.hstack((self.G1.flatten(),self.G2.flatten(),self.sinr()))
         return self.sinr()
+        # return np.hstack((self.r.flatten(),self.i.flatten(),self.sinr()))
         # return np.hstack((self.G_square.flatten(),self.sinr()))
         # return np.hstack((self.SEmax,self.sinr()))
     def step(self, action_t):
@@ -105,11 +111,11 @@ class upperEnvironmentBeam():
         self.W = self.normalizeW(self.W)
 
         next_state = self.sinr()
-        # next_state = np.hstack((self.G1.flatten(),self.G2.flatten(),self.sinr()))
+        # next_state = np.hstack((self.r.flatten(),self.i.flatten(),self.sinr()))
         # next_state= np.hstack((self.G_square.flatten(),self.sinr()))
         # next_state= np.hstack((self.SEmax,self.sinr()))
 
-        reward = (np.sum(np.log2(1 + next_state[-para.K:])))
+        reward = (np.sum(np.log2(1 + next_state[-para.K:]))) / 10
         # self.SEmax=max(self.SEmax,reward)
         # if reward<self.SEmax:
         #     reward=0
@@ -126,8 +132,8 @@ class upperEnvironmentBeam():
         # p_var=np.var(next_state)
         # reward-=p_var
         done = 0.0
-        return next_state, reward / 10, np.float32(done), None
-        # return next_state, reward , np.float32(done), None
+        # return next_state, reward / 10, np.float32(done), None
+        return next_state, reward, np.float32(done), None
 
     def reshapeAction(self, action):
         n = self.action_dim // 2
