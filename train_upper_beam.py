@@ -48,6 +48,7 @@ def train(arg_dict, env_beam, agent):
             # if timestamp >= para.max_timestamp and env_beam.check_power() == 0:
             if timestamp >= para.max_timestamp:
                 done = np.float32(1.0)
+                reward *= 10
             ep_reward += reward
             agent.memory.push(state, action, reward, next_state, done)
             agent.update()
@@ -81,6 +82,7 @@ def test(arg_dict, env_beam, agent):
     rewards = []  # 记录所有回合的奖励
     ma_rewards = []  # 记录所有回合的滑动平均奖励
     for i_ep in range(arg_dict['test_eps']):
+        env_beam = env.upperEnvironmentBeam()  # 装饰action噪声
         state = env_beam.reset()
         done = False
         ep_reward = 0
@@ -124,8 +126,8 @@ if __name__ == '__main__':
     # 相关参数设置
     parser = argparse.ArgumentParser(description="hyper parameters")
     parser.add_argument('--algo_name', default='DDPG', type=str, help="name of algorithm")
-    parser.add_argument('--train_eps', default=100, type=int, help="episodes of training")  # 原本300
-    parser.add_argument('--test_eps', default=20, type=int, help="episodes of testing")
+    parser.add_argument('--train_eps', default=300, type=int, help="episodes of training")  # 原本300
+    parser.add_argument('--test_eps', default=50, type=int, help="episodes of testing")
     parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
     parser.add_argument('--critic_lr', default=1e-3, type=float, help="learning rate of critic")
     parser.add_argument('--actor_lr', default=1e-4, type=float, help="learning rate of actor")
@@ -147,8 +149,8 @@ if __name__ == '__main__':
 
     train_flag = True
     test_flag = False
-    train_flag = False
-    test_flag = True
+    # train_flag = False
+    # test_flag = True
     # -------------------------训练----------------------------------------------------#
     if train_flag:
         # 创建环境和智能体
@@ -171,7 +173,7 @@ if __name__ == '__main__':
 
         env_beam, agent = create_env_agent(arg_dict)
         # 加载已保存的智能体
-        agent.load_model(path='runs/model/upper_agent.pt')
+        agent.load_model(path='runs/model/upper_agent_UE3.pt')
         res_dic = test(arg_dict, env_beam, agent)
 
         # save_results(res_dic, tag='test', path='runs/DQN_upper_beam')

@@ -18,6 +18,9 @@ def normalize(W):
 
 
 z = 0.5
+def simulate_channel_response(num_users, num_antennas):
+    h = np.sqrt(0.5) * (np.random.randn(num_users, num_antennas) + 1j * np.random.randn(num_users, num_antennas))
+    return h
 
 
 def fx(x):
@@ -27,32 +30,28 @@ def fx(x):
 class upperEnvironmentBeam():
     def __init__(self):
         self.state_dim = para.K
-        self.action_dim = para.K * para.N_aps
+        self.action_dim = para.K * para.N_aps * 2
         self.times = 1000
         self.actionLow = 0
         # self.actionHigh = np.sqrt(para.maxPower)
         self.actionHigh = 1
 
-        self.G = np.random.exponential(scale=1.0, size=(para.K, para.N_aps)).astype('float32')
+        # self.G = np.random.exponential(scale=1.0, size=(para.K, para.N_aps)).astype('float32')
         # self.G = self.G[:, np.argsort(self.G.sum(axis=0))]
+        self.G = simulate_channel_response(para.K, para.N_aps)
 
-        W = np.random.uniform(high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
-        # W = normalize(W)
-        self.W = self.normalizeW(W)
+        # W = np.random.uniform(high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
+        self.W = self.get_initW()
+        self.W = self.normalizeW(self.W)
         # 测试固定
         self.fix_W = self.W
 
         pass
 
-    def normalizedActions(self, action):
-        action = self.actionLow + (action + 1) * 0.5 * (self.actionHigh - self.actionLow)
-        action = np.clip(action, self.actionLow, self.actionHigh)
-        return action
-
-    def reverse_action(self, action):
-        action = 2 * (action - self.actionLow) / (self.actionHigh - self.actionLow) - 1
-        action = np.clip(action, self.actionLow, self.actionHigh)
-        return action
+    def get_initW(self, ):
+        G = np.random.uniform(low=-1.0, high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
+        G2 = np.random.uniform(low=-1.0, high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
+        return G + (1j * G2)
 
     def normalizeW(self, W):
         norm = np.linalg.norm(W, axis=0)
@@ -80,6 +79,8 @@ class upperEnvironmentBeam():
         return gamma.astype(np.float32)
 
     def reset(self):
+        # self.G=simulate_channel_response(para.K,para.N_aps)
+
         W = np.random.uniform(high=1, size=(para.K, para.N_aps)).astype('float32')
         self.W = self.normalizeW(W)
         # -----下面是另一种方法
@@ -87,17 +88,32 @@ class upperEnvironmentBeam():
         return self.sinr()
 
     def step(self, action_t):
-        self.W = action_t.reshape(para.K, para.N_aps)
+        # self.W = action_t.reshape(para.K, para.N_aps)
+        self.W = self.reshapeAction(action_t)
         self.W = self.normalizeW(self.W)
 
         next_state = self.sinr()
         reward = np.sum(np.log2(1 + next_state))
         reward -= para.K
+        # reward/=para.K
         punish = self.check_power() / 2
         # if punish > 0:
         #     reward -= 5
+        # -------解决UE3太小的问题
+        # p_var=np.var(next_state)
+        # reward-=p_var
+
         done = 0.0
-        return next_state, reward, np.float32(done), None
+        return next_state, reward / 10, np.float32(done), None
+        # return next_state, reward , np.float32(done), None
+
+    def reshapeAction(self, action):
+        n = self.action_dim // 2
+        real = action[:n]
+        imag = action[n:]
+        W = real + 1j * imag
+        W = np.reshape(W, (para.K, para.N_aps))
+        return W
 
     def check_power(self):
         sum_of_columns = np.sum(np.square(self.W), axis=0)
@@ -116,7 +132,9 @@ class upperEnvironmentBeam():
 
     def baseline_random(self, ):
         ddpg_sinr = self.get_final_res()
-        self.base1 = np.random.uniform(high=1, size=(para.K, para.N_aps)).astype('float32')
+        # self.base1 = np.random.uniform(high=1, size=(para.K, para.N_aps)).astype('float32')
+        self.base1 = self.get_initW()
+
         norm = np.linalg.norm(self.base1, axis=0)
         if 0.0 in norm:
             norm = norm + 1e-4

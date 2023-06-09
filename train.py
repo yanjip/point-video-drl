@@ -67,7 +67,7 @@ class Runner():
             self.algorithm += '_PER'
         if args.use_n_steps:
             self.algorithm += "_N_steps"
-        # self.writer = SummaryWriter(log_dir='runs/DQN_{}/seed_{}'.format(self.algorithm,  seed))
+        self.writer = SummaryWriter(log_dir='runs/DQN_{}/seed_{}'.format(self.algorithm, seed))
 
         self.evaluate_num = 0  # Record the number of evaluations
         self.evaluate_rewards = []  # Record the rewards during the evaluating

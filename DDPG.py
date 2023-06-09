@@ -45,7 +45,7 @@ class OUNoise(object):
         self.sigma = max_sigma  # OU噪声的参数
         self.max_sigma = max_sigma
         self.min_sigma = min_sigma
-        self.decay_period = decay_period
+        self.decay_period = decay_period - 60
         self.n_actions = action_space
         self.low = 0
         # self.high = np.sqrt(para.maxPower)
@@ -211,7 +211,7 @@ class DDPG:
 
     def save_model(self, path):
 
-        torch.save(self.actor.state_dict(), path + 'upper_agent.pt')
+        torch.save(self.actor.state_dict(), path + 'upper_agent_UE{}.pt'.format(para.K))
 
     def load_model(self, path):
 
