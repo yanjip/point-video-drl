@@ -8,6 +8,7 @@ import env
 import para
 from torch.utils.tensorboard import SummaryWriter
 from Draw_pic import *
+import saveH_W
 
 def create_env_agent(arg_dict):
     env_beam = env.upperEnvironmentBeam()  # 装饰action噪声
@@ -58,7 +59,7 @@ def train(arg_dict, env_beam, agent):
         if (i_ep + 1) % 2 == 0:
             # print("W:",env_beam.W)
             print(
-                f'Env_beam:{i_ep + 1}/{arg_dict["train_eps"]}, Reward:{ep_reward :.2f},SINR:{next_state[-para.K:]},sigma:{ou_noise.sigma}')
+                f'Env_beam:{i_ep + 1}/{arg_dict["train_eps"]}, Reward:{ep_reward :.2f},SINR:{env_beam.best_sinr},sigma:{ou_noise.sigma}')
             # print(f'Env_beam:{i_ep + 1}/{arg_dict["train_eps"]}, Reward:{ep_reward :.2f}')
             d, b = env_beam.baseline_random()
             print(f'DDPG:{d},*******,baseline:{b}')
@@ -136,7 +137,7 @@ if __name__ == '__main__':
     parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
     parser.add_argument('--critic_lr', default=1e-3, type=float, help="learning rate of critic")
     parser.add_argument('--actor_lr', default=1e-4, type=float, help="learning rate of actor")
-    parser.add_argument('--memory_capacity', default=500, type=int, help="memory capacity")  # 原本8000  500
+    parser.add_argument('--memory_capacity', default=300, type=int, help="memory capacity")  # 原本8000  500
     parser.add_argument('--batch_size', default=128, type=int)
     parser.add_argument('--target_update', default=2, type=int)
     parser.add_argument('--soft_tau', default=1e-2, type=float)

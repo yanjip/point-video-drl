@@ -1,7 +1,9 @@
 '''
 @Author  ：Yan JP
-@Created on Date：2023/5/5 22:51 
+@Created on Date：2023/6/10 15:47
+注意：激活函数是tanh、噪声最小值是-1
 '''
+
 import numpy as np
 import para
 from tiles import tile
@@ -34,6 +36,7 @@ class upperEnvironmentBeam():
     def __init__(self):
         self.state_dim = para.K
         # self.state_dim =para.K*para.N_aps*2+para.K
+        # self.state_dim =para.K*para.N_aps*4
         # self.state_dim = para.K
         self.action_dim = para.K * para.N_aps * 2
         self.times = 1000
@@ -53,6 +56,8 @@ class upperEnvironmentBeam():
         pass
 
     def simulate_channel_response(self, num_users, num_antennas):
+        # self.r = np.clip(np.random.rayleigh(scale=1, size=(num_users, num_antennas)), -1, 1)*1e-3
+        # self.i = np.clip(np.random.rayleigh(scale=1, size=(num_users, num_antennas)), -1, 1)*1e-3
         self.r = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
         self.i = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
 
@@ -101,10 +106,14 @@ class upperEnvironmentBeam():
         self.W = self.fix_W
         self.SEmax = 0
 
+        self.QoE = np.random.randint(0, 10, size=3)
+
         return self.sinr()
         # return np.hstack((self.r.flatten(),self.i.flatten(),self.sinr()))
         # return np.hstack((self.G_square.flatten(),self.sinr()))
         # return np.hstack((self.SEmax,self.sinr()))
+        # return np.hstack((self.r.flatten(),self.i.flatten(), self.W1.flatten(),self.W2.flatten()))
+
     def step(self, action_t):
         # self.W = action_t.reshape(para.K, para.N_aps)
         self.W = self.reshapeAction(action_t)
@@ -114,6 +123,8 @@ class upperEnvironmentBeam():
         # next_state = np.hstack((self.r.flatten(),self.i.flatten(),self.sinr()))
         # next_state= np.hstack((self.G_square.flatten(),self.sinr()))
         # next_state= np.hstack((self.SEmax,self.sinr()))
+        # next_state = np.hstack((self.r.flatten(),self.i.flatten(), action_t))
+        # reward = (np.sum(np.log2(1 + self.sinr()))) / 10
 
         reward = (np.sum(np.log2(1 + next_state[-para.K:]))) / 10
         # self.SEmax=max(self.SEmax,reward)
@@ -160,7 +171,7 @@ class upperEnvironmentBeam():
         self.base1 = self.base1 / norm
         self.W = self.base1
         base_sinr = self.get_final_res()
-        return ddpg_sinr, base_sinr
+        return ddpg_sinr * 10, base_sinr
 
 
 class transmission():
