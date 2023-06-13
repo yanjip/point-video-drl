@@ -5,7 +5,7 @@
 import numpy as np
 from para import *
 
-np.random.seed(0)
+# np.random.seed(0)
 
 def Pr_xk(i, r):
     s = 0
@@ -14,25 +14,28 @@ def Pr_xk(i, r):
     ans = i ** (-r)
     return ans / s
 
-# M_all=np.array([300e6,600e6])
-N_all=np. array([100,200])*1e3       #points
-M_all_bound=np.array([10,20])*MB
-# M_all = np.random.normal(15*MB, 10000000, size=10)
 
-# for i in range(N):
-N_points_size=np.random.randint(N_all[0],N_all[1],N)
-# np.save('tiles_datasize.npy',M_data_size)
-# print(M_data_size)
+if __name__ == '__main__':
 
-Fovs=[]
-pr=[]
+    # M_all=np.array([300e6,600e6])
+    N_all = np.array([100, 200]) * 1e3  # points
+    M_all_bound = np.array([10, 20]) * MB
+    # M_all = np.random.normal(15*MB, 10000000, size=10)
 
-for i in range(N_fovs):
-    Fovs.append(np.random.choice(N_points_size,N_F))
-    a=Pr_xk(i+1,zipf)
-    pr.append(a)
-print(pr)
-pr=np.array(pr)
+    # for i in range(N):
+    N_points_size = np.random.randint(N_all[0], N_all[1], N)
+    # np.save('tiles_datasize.npy',M_data_size)
+    # print(M_data_size)
+
+    Fovs = []
+    pr = []
+
+    for i in range(N_fovs):
+        Fovs.append(np.random.choice(N_points_size, N_F))
+        a = Pr_xk(i + 1, zipf)
+        pr.append(a)
+    print(pr)
+    pr = np.array(pr)
 
 
 
