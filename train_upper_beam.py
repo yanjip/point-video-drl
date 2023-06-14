@@ -71,6 +71,8 @@ def train(arg_dict, env_beam, agent):
         else:
             ma_rewards.append(ep_reward)
     print("W:", env_beam.W)
+    saveH_W.save_res(env_beam.final_res)
+
     print('训练结束 , 用时: ' + str(time.time() - startTime) + " s")
     # 关闭环境
     return {'episodes': range(len(rewards)), 'rewards': rewards, 'ma_rewards': ma_rewards}
@@ -133,7 +135,7 @@ if __name__ == '__main__':
     # 相关参数设置
     parser = argparse.ArgumentParser(description="hyper parameters")
     parser.add_argument('--algo_name', default='DDPG', type=str, help="name of algorithm")
-    parser.add_argument('--train_eps', default=120, type=int, help="episodes of training")  # 原本150
+    parser.add_argument('--train_eps', default=150, type=int, help="episodes of training")  # 原本150
     parser.add_argument('--test_eps', default=70, type=int, help="episodes of testing")
     parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
     parser.add_argument('--critic_lr', default=1e-3, type=float, help="learning rate of critic")

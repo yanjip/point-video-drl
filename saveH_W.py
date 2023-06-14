@@ -24,9 +24,17 @@ def load(file_path):
         data = pickle.load(f)
     return data
 
+def save_res(data):
+    file_path = 'H_W/res.npz'
+    with open(file_path, 'wb') as file:
+        pickle.dump(data, file)
+
 
 if __name__ == '__main__':
-    arr1 = np.array([1, 2])
-    arr2 = np.array([6, 7])
-    save(arr1, arr2, 'H_W/arrays.npz')
-    print(load('H_W/arrays.npz'))
+    # arr1 = np.array([1, 2])
+    # arr2 = np.array([6, 7])
+    # save(arr1, arr2, 'H_W/arrays.npz')
+    # print(load('H_W/arrays.npz'))
+
+    data = load('H_W/res.npz')
+    print(data)

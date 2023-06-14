@@ -7,6 +7,7 @@
 import numpy as np
 import para
 from tiles import tile
+import saveH_W
 
 
 def linear_normalization(x):
@@ -37,10 +38,11 @@ def map(x):
 
 class upperEnvironmentBeam():
     def __init__(self):
-        self.state_dim = para.K
+        # self.state_dim = para.K
         # self.state_dim =para.K*para.N_aps*2+para.K
         # self.state_dim =para.K*para.N_aps*4
-        # self.state_dim = para.K*2
+        np.random.seed(123)
+        self.state_dim = para.K + 2
         self.action_dim = para.K * para.N_aps * 2
         self.times = 1000
         self.actionLow = 0
@@ -71,6 +73,76 @@ class upperEnvironmentBeam():
         self.warmup = 0
         self.warmup_step = 20
         pass
+
+
+    def reset(self):
+        # W=self.get_initW()
+        # self.W = self.normalizeW(W)
+        self.W = self.fix_W
+        self.best_sinr = self.sinr()
+        self.SEmax = 0
+        self.warmup += 1
+        # return self.sinr()
+        # return np.hstack((self.r.flatten(),self.i.flatten(),self.sinr()))
+        # return np.hstack((self.G_square.flatten(),self.sinr()))
+        # return np.hstack((self.SEmax,self.sinr()))
+        # return np.hstack((self.r.flatten(),self.i.flatten(), self.W1.flatten(),self.W2.flatten()))
+        # self.QoE = np.random.randint(0,20,size=para.K)
+        # self.minQoE_index=np.argmin(self.QoE)
+
+        # if self.warmup<=self.warmup_step :
+        #     self.sinrLeast=self.sinrLeastInit/self.warmup_step*(self.warmup)+0.1
+        #     print("sinrleast:", self.sinrLeast)
+        # else:
+        #     self.sinrLeast=self.sinrLeastInit
+        return np.hstack((self.minQoE_index, np.argmax(self.best_sinr), self.sinr()))
+
+        # return self.sinr()
+
+    def step(self, action_t):
+        # self.W = action_t.reshape(para.K, para.N_aps)
+        # action_UE =action_t[-para.K:]
+        # self.update_QoE(action_UE)
+        # action_t=action_t[:para.K*para.N_aps*2]
+
+        self.W = self.reshapeAction(action_t)
+        self.W = self.normalizeW(self.W)
+
+        next_state = self.sinr()
+        # 使用 np.partition() 函数获取最大的两个数
+        max_two = np.partition(next_state, -2)[-2:]
+        var = np.clip(np.var(max_two), 0, 5)
+
+        # self.QoE=np.clip(next_state,0,20)
+        # next_state = np.hstack((self.r.flatten(),self.i.flatten(),self.sinr()))
+        # next_state= np.hstack((self.G_square.flatten(),self.sinr()))
+        # next_state= np.hstack((self.SEmax,self.sinr()))
+        # next_state = np.hstack((self.r.flatten(),self.i.flatten(), action_t))
+        # reward = (np.sum(np.log2(1 + self.sinr()))) / 10
+
+        maxSINR = np.argmax(next_state)
+        reward = (np.sum(np.log2(1 + next_state[-para.K:]))) / 10
+        if maxSINR == self.minQoE_index:
+            reward *= 1.2
+        if reward > self.SEmax:
+            self.SEmax = reward
+            self.best_sinr = next_state
+        # else:
+
+        # if self.warmup>self.warmup_step:
+        #     res = next_state > self.sinrLeast
+        #     if False not in res:
+        #         # print("target reach!")
+        #         reward*=2
+        res = self.best_sinr > self.sinrLeast
+        # if False not in res :
+        # print("target reach!")
+        # reward *= 1.2
+        self.final_res = {"W": self.W, "SE": self.SEmax * 10, "sinr": self.best_sinr, "sinr_require:": self.sinrLeast}
+        done = 0.0
+        # return next_state, reward / 10, np.float32(done), None
+        next_state = np.hstack((self.minQoE_index, maxSINR, next_state))
+        return next_state, reward, np.float32(done), None
 
     def simulate_channel_response(self, num_users, num_antennas):
         self.r = np.clip(np.random.rayleigh(scale=1, size=(num_users, num_antennas)), -1, 1)
@@ -111,73 +183,6 @@ class upperEnvironmentBeam():
             gamma[k] = numerator / denom * np.sqrt(para.maxPower)
         return gamma.astype(np.float32)
 
-    def reset(self):
-        # W=self.get_initW()
-        # self.W = self.normalizeW(W)
-        self.W = self.fix_W
-        # self.best_sinr=self.sinr()
-        self.SEmax = 0
-        self.warmup += 1
-        # return self.sinr()
-        # return np.hstack((self.r.flatten(),self.i.flatten(),self.sinr()))
-        # return np.hstack((self.G_square.flatten(),self.sinr()))
-        # return np.hstack((self.SEmax,self.sinr()))
-        # return np.hstack((self.r.flatten(),self.i.flatten(), self.W1.flatten(),self.W2.flatten()))
-        # self.QoE = np.random.randint(0,20,size=para.K)
-        # self.minQoE_index=np.argmin(self.QoE)
-
-        # if self.warmup<=self.warmup_step :
-        #     self.sinrLeast=self.sinrLeastInit/self.warmup_step*(self.warmup)+0.1
-        #     print("sinrleast:", self.sinrLeast)
-        # else:
-        #     self.sinrLeast=self.sinrLeastInit
-        # return np.hstack((self.sinr()-self.sinrLeast,self.sinr()))
-
-        return self.sinr()
-
-    def step(self, action_t):
-        # self.W = action_t.reshape(para.K, para.N_aps)
-        # action_UE =action_t[-para.K:]
-        # self.update_QoE(action_UE)
-        # action_t=action_t[:para.K*para.N_aps*2]
-
-        self.W = self.reshapeAction(action_t)
-        self.W = self.normalizeW(self.W)
-
-        next_state = self.sinr()
-        # self.QoE=np.clip(next_state,0,20)
-        # next_state = np.hstack((self.r.flatten(),self.i.flatten(),self.sinr()))
-        # next_state= np.hstack((self.G_square.flatten(),self.sinr()))
-        # next_state= np.hstack((self.SEmax,self.sinr()))
-        # next_state = np.hstack((self.r.flatten(),self.i.flatten(), action_t))
-        # reward = (np.sum(np.log2(1 + self.sinr()))) / 10
-
-        reward = (np.sum(np.log2(1 + next_state[-para.K:]))) / 10
-        if reward > self.SEmax:
-            self.SEmax = reward
-            self.best_sinr = next_state
-        # else:
-
-        # if self.warmup>self.warmup_step:
-        #     res = next_state > self.sinrLeast
-        #     if False not in res:
-        #         # print("target reach!")
-        #         reward*=2
-        #     pass
-        #     reward/=5
-        # if reward > self.SEmax:
-        #     self.SEmax = reward
-        #     self.best_sinr = next_state
-        # if self.warmup<self.warmup_step:
-        #     reward/=5
-
-        # next_state= np.hstack((self.sinr()-self.sinrLeast,self.sinr()))
-
-        done = 0.0
-        # return next_state, reward / 10, np.float32(done), None
-        # next_state=np.hstack((next_state,self.sinrLeast))
-        return next_state, reward, np.float32(done), None
-
     def reshapeAction(self, action):
         n = self.action_dim // 2
         real = action[:n]
@@ -193,7 +198,7 @@ class upperEnvironmentBeam():
         return sum_sinr
 
     def baseline_random(self, ):
-        ddpg_sinr = self.SEmax
+        ddpg_sinr = self.SEmax * 10
         # self.base1 = np.random.uniform(high=1, size=(para.K, para.N_aps)).astype('float32')
         self.base1 = self.get_initW()
 
@@ -203,7 +208,7 @@ class upperEnvironmentBeam():
         self.base1 = self.base1 / norm
         self.W = self.base1
         base_sinr = self.get_final_res()
-        return ddpg_sinr * 10, base_sinr
+        return ddpg_sinr, base_sinr
 
 
 class transmission():
