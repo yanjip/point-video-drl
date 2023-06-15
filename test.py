@@ -15,4 +15,18 @@ import numpy as np
 # O=np.floor(p).tolist()
 # print(type(O))
 
-np.save('runs/DQN/reward.npy', np.array([1, 1, 2]))
+# np.save('runs/DQN/reward.npy', np.array([1, 1, 2]))
+
+def f1():
+    np.random.seed(123)
+    print(np.random.randint(10))
+    print(np.random.randint(5))
+
+
+def f2():
+    print(np.random.randint(11))
+
+
+f1()
+f2()
+f2()

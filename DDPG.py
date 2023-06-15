@@ -45,7 +45,7 @@ class OUNoise(object):
         self.sigma = max_sigma  # OU噪声的参数
         self.max_sigma = max_sigma
         self.min_sigma = min_sigma
-        self.decay_period = decay_period - 30
+        self.decay_period = decay_period - 10
         self.n_actions = action_space
         self.low = -1
         # self.high = np.sqrt(para.maxPower)
