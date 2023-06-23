@@ -24,10 +24,10 @@ def fx(x):
     return np.exp(-z * x)
 class upperEnvironmentBeam():
     def __init__(self):
-        self.state_dim = para.K
+        # self.state_dim = para.K
         # self.state_dim =para.K*para.N_aps*2+para.K
         # self.state_dim =para.K*para.N_aps*4
-        # self.state_dim = para.K
+        self.state_dim = para.K + 1
         self.action_dim = para.K * para.N_aps * 2
         self.times = 1000
         self.actionLow = 0
@@ -41,6 +41,10 @@ class upperEnvironmentBeam():
         self.W = self.normalizeW(self.W)
         # 测试固定
         self.fix_W = self.W
+
+        self.QoE = np.random.randint(0, 30, size=para.K)
+        print("QoE:", self.QoE)
+        self.minQoE_index = np.argmin(self.QoE)
         pass
 
     def simulate_channel_response(self, num_users, num_antennas):
@@ -91,9 +95,10 @@ class upperEnvironmentBeam():
         self.W = self.fix_W
         self.SEmax = 0
 
-        self.QoE = np.random.randint(0, 10, size=3)
+        # self.QoE = np.random.randint(0, 10, size=3)
 
-        return self.sinr()
+        # return self.sinr()
+        return np.hstack((self.minQoE_index, self.sinr()))
         # return np.hstack((self.r.flatten(),self.i.flatten(),self.sinr()))
         # return np.hstack((self.G_square.flatten(),self.sinr()))
         # return np.hstack((self.SEmax,self.sinr()))
@@ -115,12 +120,18 @@ class upperEnvironmentBeam():
         # if reward<self.SEmax:
         #     reward=0
         # reward=max(reward,self.SEmax)
+        minSINR = np.argmin(next_state)
+        if minSINR == self.minQoE_index:
+            reward /= 5.0
+            # reward =-0.5
+
         if reward > self.SEmax:
             self.SEmax = reward
             self.best_sinr = next_state
 
         done = 0.0
         # return next_state, reward / 10, np.float32(done), None
+        next_state = np.hstack((self.minQoE_index, next_state))
         return next_state, reward, np.float32(done), None
     def reshapeAction(self, action):
         n = self.action_dim // 2

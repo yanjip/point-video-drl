@@ -64,8 +64,10 @@ def smooth(data, weight=0.9):
 def plot_rewards(rewards, cfg, path=None, tag='train'):
     sns.set()
     plt.figure()  # 创建一个图形实例，方便同时多画几个图
-    plt.title(f"{tag}ing curve on {cfg['device']} ")
-    plt.xlabel('epsiodes')
+    # plt.title(f"{tag}ing curve on {cfg['device']} ")
+    plt.title("Beamforming Solved By DDPG")
+    plt.xlabel('Epsiodes')
+    plt.ylabel('Reward')
     plt.plot(rewards, label='rewards')
     plt.plot(smooth(rewards), label='smoothed')
     plt.legend()

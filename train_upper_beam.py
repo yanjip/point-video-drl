@@ -135,12 +135,12 @@ if __name__ == '__main__':
     # 相关参数设置
     parser = argparse.ArgumentParser(description="hyper parameters")
     parser.add_argument('--algo_name', default='DDPG', type=str, help="name of algorithm")
-    parser.add_argument('--train_eps', default=150, type=int, help="episodes of training")  # 原本150
+    parser.add_argument('--train_eps', default=200, type=int, help="episodes of training")  # 原本150
     parser.add_argument('--test_eps', default=70, type=int, help="episodes of testing")
     parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
     parser.add_argument('--critic_lr', default=1e-3, type=float, help="learning rate of critic")
     parser.add_argument('--actor_lr', default=1e-4, type=float, help="learning rate of actor")
-    parser.add_argument('--memory_capacity', default=2000, type=int, help="memory capacity")  # 原本8000  500
+    parser.add_argument('--memory_capacity', default=3000, type=int, help="memory capacity")  # 原本8000  500
     parser.add_argument('--batch_size', default=128, type=int)
     parser.add_argument('--target_update', default=2, type=int)
     parser.add_argument('--soft_tau', default=1e-2, type=float)
