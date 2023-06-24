@@ -24,6 +24,7 @@ def fx(x):
     return np.exp(-z * x)
 class upperEnvironmentBeam():
     def __init__(self):
+        np.random.seed(624)
         # self.state_dim = para.K
         # self.state_dim =para.K*para.N_aps*2+para.K
         # self.state_dim =para.K*para.N_aps*4
@@ -121,10 +122,14 @@ class upperEnvironmentBeam():
         #     reward=0
         # reward=max(reward,self.SEmax)
         minSINR = np.argmin(next_state)
-        if minSINR == self.minQoE_index:
-            reward /= 5.0
-            # reward =-0.5
+        # if minSINR == self.minQoE_index:
+        #     reward /= 5.0
+        # reward =-0.5
 
+        TF = next_state > 2
+        second_largest = np.partition(next_state, -2)[-2]
+        if second_largest < 3.0:
+            reward /= 1.5
         if reward > self.SEmax:
             self.SEmax = reward
             self.best_sinr = next_state
