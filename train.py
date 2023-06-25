@@ -43,7 +43,7 @@ class Runner():
         current_time = datetime.datetime.now().strftime("%Y%m%d")
 
         self.train_log_dir = 'runs/DQN/' + current_time
-        # os.makedirs(self.train_log_dir, exist_ok=True)
+        os.makedirs(self.train_log_dir, exist_ok=True)
         self.writer = SummaryWriter(log_dir=self.train_log_dir)
         self.evaluate_num = 0  # Record the number of evaluations
         self.evaluate_rewards = []  # Record the rewards during the evaluating
@@ -67,7 +67,6 @@ class Runner():
             self.algorithm += '_PER'
         if args.use_n_steps:
             self.algorithm += "_N_steps"
-        self.writer = SummaryWriter(log_dir='runs/DQN_{}/seed_{}'.format(self.algorithm, seed))
 
         self.evaluate_num = 0  # Record the number of evaluations
         self.evaluate_rewards = []  # Record the rewards during the evaluating
@@ -88,12 +87,13 @@ class Runner():
             done = False
             episode_steps = 0
             episode_reward = 0
+            self.total_steps += 1
             while not done:
                 action = self.agent.choose_action(state, epsilon=self.epsilon)
                 episode_steps += 1
                 next_state, reward, done, _ = self.env.step(action,episode_steps)
                 episode_reward += reward
-                self.total_steps += 1
+                # self.total_steps += 1
 
                 if not self.args.use_noisy:  # Decay epsilon
                     self.epsilon = self.epsilon - self.epsilon_decay if self.epsilon - self.epsilon_decay > self.epsilon_min else self.epsilon_min
@@ -177,23 +177,23 @@ if __name__ == '__main__':
     curr_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     parser = argparse.ArgumentParser("Hyperparameter Setting for DQN")
     # parser.add_argument("--max_train_steps", type=int, default=int(4e5), help=" Maximum number of training steps")
-    parser.add_argument("--max_train_steps", type=int, default=int(1.2e4), help=" Maximum number of training steps")
+    parser.add_argument("--max_train_steps", type=int, default=int(800), help=" Maximum number of training steps")  # 2k
 
-    parser.add_argument("--evaluate_freq", type=float, default=2e3,
+    parser.add_argument("--evaluate_freq", type=float, default=400,
                         help="Evaluate the policy every 'evaluate_freq' steps")
     parser.add_argument("--evaluate_times", type=float, default=1, help="Evaluate times")
 
-    parser.add_argument("--buffer_capacity", type=int, default=int(0.6e5),
+    parser.add_argument("--buffer_capacity", type=int, default=int(0.1e5),
                         help="The maximum replay-buffer capacity ")  # 原本1e5
     parser.add_argument("--batch_size", type=int, default=256, help="batch size")
     parser.add_argument("--hidden_dim", type=int, default=256,
                         help="The number of neurons in hidden layers of the neural network")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate of actor")
     parser.add_argument("--gamma", type=float, default=0.90, help="Discount factor")
-    parser.add_argument("--epsilon_init", type=float, default=0.5, help="Initial epsilon")
+    parser.add_argument("--epsilon_init", type=float, default=0.4, help="Initial epsilon")
     parser.add_argument("--epsilon_min", type=float, default=0.1, help="Minimum epsilon")
-    parser.add_argument("--epsilon_decay_steps", type=int, default=int(0.1e5),
-                        help="How many steps before the epsilon decays to the minimum")  # 原本1e5
+    parser.add_argument("--epsilon_decay_steps", type=int, default=int(1000),
+                        help="How many steps before the epsilon decays to the minimum")  # 原本0.1e5
     parser.add_argument("--tau", type=float, default=0.005, help="soft update the target network")
     parser.add_argument("--use_soft_update", type=bool, default=True, help="Whether to use soft update")
     parser.add_argument("--target_update_freq", type=int, default=200,

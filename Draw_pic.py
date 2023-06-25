@@ -131,3 +131,18 @@ def save_args(args, path=None):
     with open(f"{path}/params.json", 'w') as fp:
         json.dump(args, fp, cls=NpEncoder)
     print("参数已保存: " + f"{path}/params.json")
+
+
+import time
+
+
+def write_sinr(sinr, SE):
+    with open('H_W/sinr_SE.txt', 'a+') as F:
+        F.write(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + '\n')
+        F.write("SINR:" + str(sinr) + "       SE_all:" + str(SE) + "\n\n")
+
+
+if __name__ == '__main__':
+    sinr = [11.379501, 4.522286, 41.942398]
+    se = 11.519477844238281
+    write_sinr(sinr, se)

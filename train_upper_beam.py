@@ -71,6 +71,7 @@ def train(arg_dict, env_beam, agent):
         else:
             ma_rewards.append(ep_reward)
     print("W:", env_beam.W)
+    write_sinr(env_beam.best_sinr, d)
     # saveH_W.save_res(env_beam.final_res)
 
     print('训练结束 , 用时: ' + str(time.time() - startTime) + " s")
@@ -140,7 +141,7 @@ if __name__ == '__main__':
     parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
     parser.add_argument('--critic_lr', default=1e-3, type=float, help="learning rate of critic")
     parser.add_argument('--actor_lr', default=1e-4, type=float, help="learning rate of actor")
-    parser.add_argument('--memory_capacity', default=3000, type=int, help="memory capacity")  # 原本8000  500
+    parser.add_argument('--memory_capacity', default=5000, type=int, help="memory capacity")  # 原本3000  500
     parser.add_argument('--batch_size', default=128, type=int)
     parser.add_argument('--target_update', default=2, type=int)
     parser.add_argument('--soft_tau', default=1e-2, type=float)

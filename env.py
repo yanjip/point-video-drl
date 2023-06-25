@@ -121,18 +121,21 @@ class upperEnvironmentBeam():
         # if reward<self.SEmax:
         #     reward=0
         # reward=max(reward,self.SEmax)
-        minSINR = np.argmin(next_state)
-        # if minSINR == self.minQoE_index:
-        #     reward /= 5.0
-        # reward =-0.5
-
-        TF = next_state > 2
-        second_largest = np.partition(next_state, -2)[-2]
-        if second_largest < 3.0:
-            reward /= 1.5
         if reward > self.SEmax:
             self.SEmax = reward
             self.best_sinr = next_state
+
+        minSINR = np.argmin(next_state)
+        # if minSINR != self.minQoE_index:
+        #     reward *= 2.0
+        if minSINR == self.minQoE_index:
+            reward /= 2.0
+            # reward =-0.5
+
+        TF = next_state > 2
+        second_largest = np.partition(next_state, -2)[-2]
+        if second_largest < 4.0:
+            reward /= 1.5
 
         done = 0.0
         # return next_state, reward / 10, np.float32(done), None

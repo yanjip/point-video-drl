@@ -132,3 +132,12 @@ tile那个文件里设置了！
 # 6.14日：
 - 因为只需要对QoE最小的用户赋形，所以把之前的state中index删掉应该没影响，结果却显示
 效果更差了！
+
+# 6.15日：
+- 目前这样写
+> 
+    second_largest = np.partition(next_state, -2)[-2]
+        if second_largest < 3.0:
+            reward /= 1.5
+效果还可以，但删掉之前state加的minSINR之后，反而不行了
+- 关于奖励，可以选择乘法和除法，注意的是除法不能选择太大的数，不然难以收敛。
