@@ -98,13 +98,17 @@ class DQN(object):
         batch, batch_index, IS_weight = replay_buffer.sample(total_steps)
 
         with torch.no_grad():  # q_target has no gradient
-            if self.use_double:  # Whether to use the 'double q-learning'
+            if self.use_double:  # Whether to use the 'double q-learning' True
                 # Use online_net to select the action
                 a_argmax = self.net(batch['next_state']).argmax(dim=-1, keepdim=True)  # shape：(batch_size,1)
                 # Use target_net to estimate the q_target
-                q_target = batch['reward'] + self.gamma * (1 - batch['terminal']) * self.target_net(batch['next_state']).gather(-1, a_argmax).squeeze(-1)  # shape：(batch_size,)
+                q_target = batch['reward'] + self.gamma * (1 - batch['terminal']) * self.target_net(
+                    batch['next_state']).gather(-1, a_argmax).squeeze(-1)  # shape：(batch_size,)
+                # q_target = batch['reward'] + self.gamma * self.target_net(batch['next_state']).gather(-1, a_argmax).squeeze(-1)  # shape：(batch_size,)
+
             else:
-                q_target = batch['reward'] + self.gamma * (1 - batch['terminal']) * self.target_net(batch['next_state']).max(dim=-1)[0]  # shape：(batch_size,)
+                q_target = batch['reward'] + self.gamma * (1 - batch['terminal']) * \
+                           self.target_net(batch['next_state']).max(dim=-1)[0]  # shape：(batch_size,)
 
         q_current = self.net(batch['state']).gather(-1, batch['action']).squeeze(-1)  # shape：(batch_size,)
         td_errors = q_current - q_target  # shape：(batch_size,)

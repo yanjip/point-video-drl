@@ -34,3 +34,8 @@ import numpy as np
 a = np.array([3, 4, 5])
 b = a > 3
 print(type(b))
+
+import datetime
+
+a = datetime.datetime.now().strftime("%Y/%m/%d-%H:%M:%S")
+print(a)

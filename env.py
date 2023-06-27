@@ -28,7 +28,7 @@ class upperEnvironmentBeam():
         # self.state_dim = para.K
         # self.state_dim =para.K*para.N_aps*2+para.K
         # self.state_dim =para.K*para.N_aps*4
-        self.state_dim = para.K + 1
+        self.state_dim = para.K + 2
         self.action_dim = para.K * para.N_aps * 2
         self.times = 1000
         self.actionLow = 0
@@ -99,7 +99,8 @@ class upperEnvironmentBeam():
         # self.QoE = np.random.randint(0, 10, size=3)
 
         # return self.sinr()
-        return np.hstack((self.minQoE_index, self.sinr()))
+        minSINR = np.argmin(self.sinr())
+        return np.hstack((self.minQoE_index, minSINR, self.sinr()))
         # return np.hstack((self.r.flatten(),self.i.flatten(),self.sinr()))
         # return np.hstack((self.G_square.flatten(),self.sinr()))
         # return np.hstack((self.SEmax,self.sinr()))
@@ -128,18 +129,22 @@ class upperEnvironmentBeam():
         minSINR = np.argmin(next_state)
         # if minSINR != self.minQoE_index:
         #     reward *= 2.0
+        # reward += 0.8
         if minSINR == self.minQoE_index:
-            reward /= 2.0
+            reward /= 10.0
             # reward =-0.5
 
         TF = next_state > 2
         second_largest = np.partition(next_state, -2)[-2]
-        if second_largest < 4.0:
-            reward /= 1.5
+        if second_largest > 4.0:
+            # reward *= 1.5
+            # reward += 0.1
+            pass
 
+        # final_r=
         done = 0.0
         # return next_state, reward / 10, np.float32(done), None
-        next_state = np.hstack((self.minQoE_index, next_state))
+        next_state = np.hstack((self.minQoE_index, minSINR, next_state))
         return next_state, reward, np.float32(done), None
     def reshapeAction(self, action):
         n = self.action_dim // 2
@@ -167,7 +172,7 @@ class upperEnvironmentBeam():
 
 
 class transmission():
-    def __init__(self, p):
+    def __init__(self, p, sinr):
         self.H_2 = para.H_2
         self.p = p
         self.n0 = para.N0
@@ -175,14 +180,17 @@ class transmission():
         # --HMD
         self.F_max = para.F_max
         self.b_s = para.b_s
-        self.Dt=0
+        self.Dt = 0
+        self.sinr = sinr
         self.get_rt()
+
     def get_rt(self):
-        sinr=self.p/self.n0*sum(self.H_2)
-        self.rt=self.B*(np.log2(1+sinr))
+        # sinr=self.p/self.n0*sum(self.H_2)
+        self.rt = self.B * (np.log2(1 + self.sinr))
         return self.rt
-    def get_energy_t(self,Tu):
-        return self.p*Tu
+
+    def get_energy_t(self, Tu):
+        return self.p * Tu
     def get_Tu(self,cil,Mil):
         num_bit=0
         for i in range(len(Mil)):
@@ -262,8 +270,10 @@ class subEnvironment:
         self.zmax = max(self.z)
         # self.Q_fov=ttile.Q[self.fov_tile_id]    #暂时没有排序的必要
         self.Mi = para.bitrate
+        # self.Mi = para.bitrate/para.N
+
         # self.index=0
-        self.trans = transmission(para.Pmax)
+        self.trans = transmission(para.Pmax, para.sinr)
         self.action_value = [1.0, 0.8, 0.6, 0.4, 0.2, 0.2, 0.4, 0.6, 0.8, 1.0]  # 压缩->未压缩
         self.state_dim = 5  # Dt、-Tu、Td、Qi、
         self.action_dim = 10
@@ -351,14 +361,16 @@ class subEnvironment:
         p = 0
         # if penalty_t > 0:
         #     p = -10
-        if self.time_occu > 1:
-            p -= 25
+        # if self.time_occu > 1:
+        #     p -= 25
         # q = 40 / dis_i * zi * li * (1 / Oi)
         zi_nor = self.get_z_nor(zi)
         q = fx(dis_i) * fx(Oi) * (zi_nor + li) * 10
         reward = p + q
+        if self.time_occu > 1:
+            reward /= 10.0
         self.tile_QoE.append(q)
-        reward = min(15, reward)
+        # reward = min(15, reward)
         # if k==0:
         #     rr=0.3*(li)
         #     reward+=rr
@@ -368,18 +380,19 @@ class subEnvironment:
         # if self.Dt>self.Dmax:
         # self.done=1
         # r=linear_normalization(self.Dt-self.Dmax) #后面再调(意思是若Dt越接近Dmax越好）
-        r = 0
+        # r = 0
         Dt_Dmax_nor = linear_normalization(self.Dt - self.Dmax)
-        if Dt_Dmax_nor < 0 and k == 1:
+        if Dt_Dmax_nor < 0 and k == 1:  # k=1为压缩
             # if self.Dt < self.Dmax and k == 1:
             # r=abs(reward)
             # r = li+4
             # r=0.1*(li+4)
-            r = 0.2 * li
+            # r = 0.1 * li
+            reward *= 2.5
         # r =reward*li
         if k == 1 and self.Dt > self.Dmax:
-            r = -5
-        reward += r
+            reward /= 5.0
+        # reward += r
         # self.index += 1
         if index == para.N_F:
             self.done = 1
@@ -403,9 +416,9 @@ class subEnvironment:
         else:
             O = self.ttile.O
         print("遮挡等级：", O[self.searchId])
-        print("tile_datasize:", self.tile_data)
+        # print("tile_datasize:", self.tile_data)
         tile_QoE = np.array(self.tile_QoE)
-        print("Tu_Td:", self.Tu_Td)
+        # print("Tu_Td:", self.Tu_Td)
         print("time_consum:", self.time_occu)
         print("QoE:", tile_QoE)
         print("sum_QoE:", sum(self.tile_QoE), end='\n\n')

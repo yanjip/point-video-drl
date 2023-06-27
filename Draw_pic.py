@@ -11,6 +11,7 @@ import json
 import random
 import torch
 import pandas as pd
+import datetime
 
 from matplotlib.font_manager import FontProperties  # 导入字体模块
 
@@ -61,6 +62,22 @@ def smooth(data, weight=0.9):
     return smoothed
 
 
+def plot_rewards_tile(rewards, cfg, path=None):
+    sns.set()
+    plt.figure()  # 创建一个图形实例，方便同时多画几个图
+    # plt.title(f"{tag}ing curve on {cfg['device']} ")
+    plt.title("Tile Choose Solved By DQN")
+    plt.xlabel('Epsiodes')
+    plt.ylabel('Reward')
+    plt.plot(rewards, label='rewards')
+    plt.plot(smooth(rewards), label='smoothed')
+    plt.legend()
+    a = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    if cfg['save_fig']:
+        plt.savefig(f"{path}/{a}train_curve.png")
+    if cfg['show_fig']:
+        plt.show()
+
 def plot_rewards(rewards, cfg, path=None, tag='train'):
     sns.set()
     plt.figure()  # 创建一个图形实例，方便同时多画几个图
@@ -71,8 +88,10 @@ def plot_rewards(rewards, cfg, path=None, tag='train'):
     plt.plot(rewards, label='rewards')
     plt.plot(smooth(rewards), label='smoothed')
     plt.legend()
+    a = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+
     if cfg['save_fig']:
-        plt.savefig(f"{path}/{tag}ing_curve.png")
+        plt.savefig(f"{path}/{a}_beamforing.png")
     if cfg['show_fig']:
         plt.show()
 

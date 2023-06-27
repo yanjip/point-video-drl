@@ -60,6 +60,7 @@ D_max = 1 * GB  # HMD的处理区数据量大小
 K = 3  # user number
 Bt = 2.0  # 设备的初始化视频缓冲区
 QoE0 = 10
+sinr = 44.0
 
 # upper para
 maxPower = 10.0
