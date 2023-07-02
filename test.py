@@ -39,3 +39,11 @@ import datetime
 
 a = datetime.datetime.now().strftime("%Y/%m/%d-%H:%M:%S")
 print(a)
+
+'''待用
+self.powerbook = np.arange(Config().n_power_levels) * self.max_power / (Config().n_power_levels - 1)
+self.power_index = action % Config().n_power_levels
+self.code_index = action // Config().n_power_levels
+self.code = self.codebook[:, self.code_index]
+self.power = self.powerbook[self.power_index]
+'''

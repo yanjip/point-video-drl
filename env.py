@@ -28,7 +28,7 @@ class upperEnvironmentBeam():
         # self.state_dim = para.K
         # self.state_dim =para.K*para.N_aps*2+para.K
         # self.state_dim =para.K*para.N_aps*4
-        self.state_dim = para.K + 2
+        self.state_dim = para.K + 1
         self.action_dim = para.K * para.N_aps * 2
         self.times = 1000
         self.actionLow = 0
@@ -48,44 +48,6 @@ class upperEnvironmentBeam():
         self.minQoE_index = np.argmin(self.QoE)
         pass
 
-    def simulate_channel_response(self, num_users, num_antennas):
-        # self.r = np.clip(np.random.rayleigh(scale=1, size=(num_users, num_antennas)), -1, 1)
-        # self.i = np.clip(np.random.rayleigh(scale=1, size=(num_users, num_antennas)), -1, 1)
-        # self.r = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
-        # self.i = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
-        self.r = np.clip(np.random.exponential(scale=1.0, size=(num_users, num_antennas)), -1, 1)
-        self.i = np.clip(np.random.exponential(scale=1.0, size=(num_users, num_antennas)), -1, 1)
-        h = np.sqrt(0.5) * self.r + 1j * self.i
-        return h
-
-    def get_initW(self, ):
-        self.W1 = np.random.uniform(low=-1.0, high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
-        self.W2 = np.random.uniform(low=-1.0, high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
-        return self.W1 + (1j * self.W2)
-    def normalizeW(self, W):
-        norm = np.linalg.norm(W, axis=0)
-        if 0.0 in norm:
-            norm = norm + 1e-4
-        W = W / norm
-        return W
-    def sinr(self, ):
-        W2 = np.square(self.W)
-        gamma = np.zeros(para.K, dtype='float32')
-        for k in range(para.K):
-            numerator = np.dot(self.G[k, :].reshape(1, para.N_aps), self.W[k, :].reshape(para.N_aps, 1))
-            numerator = np.square(np.linalg.norm(numerator))
-
-            interference = 0
-            for k1 in range(para.K):
-                if k != k1:
-                    interference_1 = np.dot(self.G[k, :].reshape(1, para.N_aps), self.W[k1, :].reshape(para.N_aps, 1))
-                    interference += np.square(np.linalg.norm(interference_1))
-            denom = interference
-            if denom == 0:
-                denom += 1e-8
-            gamma[k] = numerator / denom * para.maxPower
-        return gamma.astype(np.float32)
-
     def reset(self):
         # self.G=self.simulate_channel_response(para.K,para.N_aps)
         # self.G_square=np.linalg.norm(self.G,axis=1)
@@ -97,10 +59,13 @@ class upperEnvironmentBeam():
         self.SEmax = 0
 
         # self.QoE = np.random.randint(0, 10, size=3)
+        # self.QoE = np.random.randint(0, 30, size=para.K)
+        # self.minQoE_index = np.argmin(self.QoE)
 
         # return self.sinr()
         minSINR = np.argmin(self.sinr())
-        return np.hstack((self.minQoE_index, minSINR, self.sinr()))
+        # return np.hstack((self.minQoE_index, minSINR, self.sinr()))
+        return np.hstack((self.minQoE_index, self.sinr()))
         # return np.hstack((self.r.flatten(),self.i.flatten(),self.sinr()))
         # return np.hstack((self.G_square.flatten(),self.sinr()))
         # return np.hstack((self.SEmax,self.sinr()))
@@ -122,30 +87,75 @@ class upperEnvironmentBeam():
         # if reward<self.SEmax:
         #     reward=0
         # reward=max(reward,self.SEmax)
-        if reward > self.SEmax:
+
+        minSINR = np.argmin(next_state)
+        maxSINR = np.argmax(next_state)
+        if reward > self.SEmax and minSINR != self.minQoE_index:
             self.SEmax = reward
             self.best_sinr = next_state
 
-        minSINR = np.argmin(next_state)
-        # if minSINR != self.minQoE_index:
-        #     reward *= 2.0
-        # reward += 0.8
         if minSINR == self.minQoE_index:
-            reward /= 10.0
-            # reward =-0.5
-
+            reward /= 1.5  # 1.5效果较好
+            # reward = -0.1
+            pass
+        # if maxSINR == self.minQoE_index:
+        #     reward *= 1.5
+        # reward += 0.8
         TF = next_state > 2
-        second_largest = np.partition(next_state, -2)[-2]
-        if second_largest > 4.0:
-            # reward *= 1.5
-            # reward += 0.1
+        self.second_largest = np.partition(next_state, -2)[-2]
+        if self.second_largest > 4.0:
+            # reward += 0.2
+            # reward *= 2.0
             pass
 
         # final_r=
         done = 0.0
         # return next_state, reward / 10, np.float32(done), None
-        next_state = np.hstack((self.minQoE_index, minSINR, next_state))
+        # next_state = np.hstack((self.minQoE_index, minSINR, next_state))
+        next_state = np.hstack((self.minQoE_index, next_state))
+
         return next_state, reward, np.float32(done), None
+
+    def simulate_channel_response(self, num_users, num_antennas):
+        # self.r = np.clip(np.random.rayleigh(scale=1, size=(num_users, num_antennas)), -1, 1)
+        # self.i = np.clip(np.random.rayleigh(scale=1, size=(num_users, num_antennas)), -1, 1)
+        # self.r = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
+        # self.i = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
+        self.r = np.clip(np.random.exponential(scale=1.0, size=(num_users, num_antennas)), -1, 1)
+        self.i = np.clip(np.random.exponential(scale=1.0, size=(num_users, num_antennas)), -1, 1)
+        h = np.sqrt(0.5) * self.r + 1j * self.i
+        return h
+
+    def get_initW(self, ):
+        self.W1 = np.random.uniform(low=-1.0, high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
+        self.W2 = np.random.uniform(low=-1.0, high=self.actionHigh, size=(para.K, para.N_aps)).astype('float32')
+        return self.W1 + (1j * self.W2)
+
+    def normalizeW(self, W):
+        norm = np.linalg.norm(W, axis=0)
+        if 0.0 in norm:
+            norm = norm + 1e-4
+        W = W / norm
+        return W
+
+    def sinr(self, ):
+        # W2 = np.square(self.W)
+        gamma = np.zeros(para.K, dtype='float32')
+        for k in range(para.K):
+            numerator = np.dot(self.G[k, :].reshape(1, para.N_aps), self.W[k, :].reshape(para.N_aps, 1))
+            numerator = np.square(np.linalg.norm(numerator))
+
+            interference = 0
+            for k1 in range(para.K):
+                if k != k1:
+                    interference_1 = np.dot(self.G[k, :].reshape(1, para.N_aps), self.W[k1, :].reshape(para.N_aps, 1))
+                    interference += np.square(np.linalg.norm(interference_1))
+            denom = interference
+            if denom == 0:
+                denom += 1e-8
+            gamma[k] = numerator / denom * para.maxPower
+        return gamma.astype(np.float32)
+
     def reshapeAction(self, action):
         n = self.action_dim // 2
         real = action[:n]
@@ -153,6 +163,7 @@ class upperEnvironmentBeam():
         W = real + 1j * imag
         W = np.reshape(W, (para.K, para.N_aps))
         return W
+
     def get_final_res(self, ):
         sinr = self.sinr()
         sum_sinr = np.sum(np.log2(1 + sinr))
@@ -258,6 +269,7 @@ class upperEnvironment():
         return self.next_obs, reward, self.done, None
     def get_info(self, ):
         return self.next_obs
+
 class subEnvironment:
     def __init__(self, seed, ttile: tile, fov_id):
         self.fov_id = fov_id
@@ -391,7 +403,7 @@ class subEnvironment:
             reward *= 2.5
         # r =reward*li
         if k == 1 and self.Dt > self.Dmax:
-            reward /= 5.0
+            reward /= 3.0
         # reward += r
         # self.index += 1
         if index == para.N_F:
@@ -422,3 +434,49 @@ class subEnvironment:
         print("time_consum:", self.time_occu)
         print("QoE:", tile_QoE)
         print("sum_QoE:", sum(self.tile_QoE), end='\n\n')
+
+
+class BeamformBL():
+    def __init__(self, envBeam: upperEnvironmentBeam):
+        self.state_dim = envBeam.state_dim
+        self.action_dim = envBeam.action_dim
+        self.G = envBeam.G
+        self.W = envBeam.W
+        self.fix_W = self.W
+        self.minQoE_index = envBeam.minQoE_index
+        self.codebook = para.get_codebook()
+        pass
+
+    def reset(self, ):
+        self.W = self.fix_W
+        self.SEmax = 0
+        return np.hstack((self.minQoE_index, self.sinr()))
+
+        pass
+
+    def step(self, action):
+        self.W = self.codebook[action]
+        next_state = self.sinr()
+        reward = (np.sum(np.log2(1 + next_state[-para.K:]))) / 10
+        done = 0.0
+        next_state = np.hstack((self.minQoE_index, next_state))
+        return next_state, reward, np.float32(done), None
+
+        pass
+
+    def sinr(self, ):
+        gamma = np.zeros(para.K, dtype='float32')
+        for k in range(para.K):
+            numerator = np.dot(self.G[k, :].reshape(1, para.N_aps), self.W[k, :].reshape(para.N_aps, 1))
+            numerator = np.square(np.linalg.norm(numerator))
+
+            interference = 0
+            for k1 in range(para.K):
+                if k != k1:
+                    interference_1 = np.dot(self.G[k, :].reshape(1, para.N_aps), self.W[k1, :].reshape(para.N_aps, 1))
+                    interference += np.square(np.linalg.norm(interference_1))
+            denom = interference
+            if denom == 0:
+                denom += 1e-8
+            gamma[k] = numerator / denom * para.maxPower
+        return gamma.astype(np.float32)

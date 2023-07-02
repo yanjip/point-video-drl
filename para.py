@@ -4,12 +4,13 @@
 '''
 import math
 import numpy as np
+import scipy.io as sio
 
 # Data size scales
 BYTE = 8
-KB = 1024*BYTE
-MB = 1024*KB
-GB = 1024*MB
+KB = 1024 * BYTE
+MB = 1024 * KB
+GB = 1024 * MB
 # TB = 1024*GB
 # PB = 1024*TB
 
@@ -81,3 +82,10 @@ def px(x):
 # with open('tiles.pkl', 'rb') as inp:
 #     ttile = pickle.load(inp)
 # print(ttile)
+
+
+def get_codebook():
+    mdict = sio.loadmat('beamforming/codebook2.mat')
+    # code_book = mdict['ans']
+    code_book = mdict['W']
+    return code_book

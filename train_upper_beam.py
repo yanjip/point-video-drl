@@ -25,6 +25,7 @@ def train(arg_dict, env_beam, agent):
     ou_noise = OUNoise(env_beam.action_dim, decay_period=arg_dict["train_eps"])  # noise of action
     ou_noise.reset()
     rewards = []  # 记录所有回合的奖励
+    final_SE = 0
     ma_rewards = []  # 记录所有回合的滑动平均奖励
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
     train_log_dir = 'runs/DQN_upper_beam/' + current_time
@@ -55,13 +56,17 @@ def train(arg_dict, env_beam, agent):
             agent.update()
             state = next_state
         # writer.add_scalar('step_rewards:', ep_reward, global_step=i_ep)
+        d, b = env_beam.baseline_random()
+        if d > final_SE and env_beam.second_largest > 10:
+            final_SE = d
+            final_W = env_beam.W
+            final_sinr = env_beam.best_sinr
 
         if (i_ep + 1) % 2 == 0:
             # print("W:",env_beam.W)
             print(
                 f'Env_beam:{i_ep + 1}/{arg_dict["train_eps"]}, Reward:{ep_reward :.2f},SINR:{env_beam.best_sinr},sigma:{ou_noise.sigma}')
             # print(f'Env_beam:{i_ep + 1}/{arg_dict["train_eps"]}, Reward:{ep_reward :.2f}')
-            d, b = env_beam.baseline_random()
             print(f'DDPG:{d},*******,baseline:{b}')
             print("--------------------------------\n")
 
@@ -70,8 +75,11 @@ def train(arg_dict, env_beam, agent):
             ma_rewards.append(0.9 * ma_rewards[-1] + 0.1 * ep_reward)
         else:
             ma_rewards.append(ep_reward)
-    print("W:", env_beam.W)
-    write_sinr(env_beam.best_sinr, d)
+    print(f'Final_SINR:{final_sinr},Final_SE:{final_SE}')
+    print("Final_W:", final_W)
+    # write_sinr(env_beam.best_sinr, d)
+    write_sinr(final_sinr, final_SE)
+
     # saveH_W.save_res(env_beam.final_res)
 
     print('训练结束 , 用时: ' + str(time.time() - startTime) + " s")
@@ -141,7 +149,7 @@ if __name__ == '__main__':
     parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
     parser.add_argument('--critic_lr', default=1e-3, type=float, help="learning rate of critic")
     parser.add_argument('--actor_lr', default=1e-4, type=float, help="learning rate of actor")
-    parser.add_argument('--memory_capacity', default=5000, type=int, help="memory capacity")  # 原本3000  500
+    parser.add_argument('--memory_capacity', default=8000, type=int, help="memory capacity")  # 原本3000  500
     parser.add_argument('--batch_size', default=128, type=int)
     parser.add_argument('--target_update', default=2, type=int)
     parser.add_argument('--soft_tau', default=1e-2, type=float)

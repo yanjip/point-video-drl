@@ -205,22 +205,23 @@ if __name__ == '__main__':
     curr_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     parser = argparse.ArgumentParser("Hyperparameter Setting for DQN")
     # parser.add_argument("--max_train_steps", type=int, default=int(4e5), help=" Maximum number of training steps")
-    parser.add_argument("--max_train_steps", type=int, default=int(450), help=" Maximum number of training steps")  # 2k
-    parser.add_argument("--epsilon_decay_steps", type=int, default=int(430),
+    parser.add_argument("--max_train_steps", type=int, default=int(550), help=" Maximum number of training steps")  # 2k
+    parser.add_argument("--epsilon_decay_steps", type=int, default=int(550),
                         help="How many steps before the epsilon decays to the minimum")  # 原本0.1e5
+    parser.add_argument("--epsilon_init", type=float, default=0.5, help="Initial epsilon")
+    parser.add_argument("--epsilon_min", type=float, default=0.1, help="Minimum epsilon")
     parser.add_argument("--evaluate_freq", type=float, default=400,
                         help="Evaluate the policy every 'evaluate_freq' steps")
     parser.add_argument("--evaluate_times", type=float, default=1, help="Evaluate times")
 
-    parser.add_argument("--buffer_capacity", type=int, default=int(3000),
+    parser.add_argument("--buffer_capacity", type=int, default=int(5000),
                         help="The maximum replay-buffer capacity ")  # 原本0.1e5
     parser.add_argument("--batch_size", type=int, default=256, help="batch size")
     parser.add_argument("--hidden_dim", type=int, default=256,
                         help="The number of neurons in hidden layers of the neural network")
     parser.add_argument("--lr", type=float, default=1e-4, help="Learning rate of actor")
     parser.add_argument("--gamma", type=float, default=0.90, help="Discount factor")
-    parser.add_argument("--epsilon_init", type=float, default=0.4, help="Initial epsilon")
-    parser.add_argument("--epsilon_min", type=float, default=0.1, help="Minimum epsilon")
+
     parser.add_argument("--tau", type=float, default=0.005, help="soft update the target network")
     parser.add_argument("--use_soft_update", type=bool, default=True, help="Whether to use soft update")
     parser.add_argument("--target_update_freq", type=int, default=200,
