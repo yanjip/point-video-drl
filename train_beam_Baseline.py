@@ -38,16 +38,15 @@ class Runner():
         np.random.seed(seed)
         torch.manual_seed(seed)
 
-        self.env = env.subEnvironment(seed, ttile, fov_id)
+        self.envBeam1 = env.upperEnvironmentBeam()
+        self.env = env.BeamformBL(self.envBeam1)
         self.args.state_dim = self.env.state_dim
         self.args.action_dim = self.env.action_dim
 
-        # current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-        current_time = datetime.datetime.now().strftime("%Y%m%d")
+        current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
+        # current_time = datetime.datetime.now().strftime("%Y%m%d")
 
-        self.train_log_dir = 'runs/DQN/' + current_time
-        # os.makedirs(self.train_log_dir, exist_ok=True)
-        # self.writer = SummaryWriter(log_dir=self.train_log_dir)
+        self.train_log_dir = 'runs/DQN_beam_Baseline/' + current_time
         self.evaluate_num = 0  # Record the number of evaluations
         self.evaluate_rewards = []  # Record the rewards during the evaluating
         self.total_steps = 0  # Record the total steps during the training
@@ -59,17 +58,6 @@ class Runner():
 
         self.agent = DQN(args)
 
-        self.algorithm = 'DQN'
-        if args.use_double:
-            self.algorithm += '_Double'
-        if args.use_dueling:
-            self.algorithm += '_Dueling'
-        if args.use_noisy:
-            self.algorithm += '_Noisy'
-        if args.use_per:
-            self.algorithm += '_PER'
-        if args.use_n_steps:
-            self.algorithm += "_N_steps"
 
         self.evaluate_num = 0  # Record the number of evaluations
         self.evaluate_rewards = []  # Record the rewards during the evaluating
@@ -99,7 +87,7 @@ class Runner():
                 action = self.agent.choose_action(state, epsilon=self.epsilon)
                 res.append(action)
                 episode_steps += 1
-                next_state, reward, done, _ = self.env.step(action, episode_steps)
+                next_state, reward, done, _ = self.env.step(action)
                 episode_reward += reward
                 # self.total_steps += 1
 
@@ -120,7 +108,16 @@ class Runner():
 
             if self.total_steps % 20 == 0:
                 # self.evaluate_policy()
-                self.print_res(res, episode_reward)
+                # print("episode_rewards:",episode_reward)
+                # print("episode_rewards:",episode_reward)
+                print(
+                    "-----------------total_steps:{} \n evaluate_reward:{} \t epsilon：{} \t SINR: {} \t SE:{}\n".format(
+                        self.total_steps,
+                        episode_reward,
+                        self.epsilon,
+                        next_state,
+                        reward * 10))
+                # self.print_res(res, episode_reward)
                 pass
             # Save reward
             # self.writer.add_scalar('step_rewards:', episode_reward, global_step=self.total_steps)
@@ -136,14 +133,14 @@ class Runner():
         # self.writer.close()
 
         cfg = {'save_fig': True, 'show_fig': False}
-        plot_rewards_tile(rewards, cfg, path='runs/DQN/Picture')
+        plot_rewards_tile(rewards, cfg, path='runs/DQN_beam_Baseline')
         # np.save(self.train_log_dir + 'reward.npy', np.array(self.evaluate_rewards))
         # torch.save(model.state_dict(), 'model.pt')
 
         # 保存 agent
         # with open('runs/model/agent.pkl', 'wb') as f:
         #     pickle.dump(self.agent, f)
-        self.evaluate_policy()
+        # self.evaluate_policy()
 
     def greedy(self, ):
         self.baseline = baseline.greedyMethod(ttile, fov_id)
@@ -166,7 +163,7 @@ class Runner():
                 action = self.agent.choose_action(state, epsilon=0)
                 res.append(action)
                 episode_steps += 1
-                next_state, reward, done, _ = self.env.step(action, episode_steps)
+                next_state, reward, done, _ = self.env.step(action)
                 episode_reward += reward
                 state = next_state
             evaluate_reward += episode_reward
@@ -179,23 +176,12 @@ class Runner():
         #                                                                                    self.epsilon))
         # self.writer.add_scalar('evaluate_rewards:', evaluate_reward, global_step=self.total_steps)
         # 统计结果
-        self.print_res(res, evaluate_reward)
+        # self.print_res(res, evaluate_reward)
 
-    def print_res(self, res, episode_reward):
-        print("-----------------total_steps:{} \t evaluate_reward:{} \t epsilon：{}".format(self.total_steps,
-                                                                                           episode_reward,
-                                                                                           self.epsilon))
-        new_res = []
-        for a in res:
-            if a < 5:
-                k = 1  # 1表示压缩
-            else:
-                k = 0
-            l = a  # 范围就是0-9
-            new_res.append([k, l])
-        self.new_res = new_res
-        print(new_res)
-        self.env.get_info()
+    # def print_res(self, res, episode_reward):
+    #     print("-----------------total_steps:{} \t evaluate_reward:{} \t epsilon：{}".format(self.total_steps,
+    #                                                                                        episode_reward,
+    #                                                                                        self.epsilon))
 
 
 if __name__ == '__main__':
@@ -207,8 +193,8 @@ if __name__ == '__main__':
     curr_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     parser = argparse.ArgumentParser("Hyperparameter Setting for DQN")
     # parser.add_argument("--max_train_steps", type=int, default=int(4e5), help=" Maximum number of training steps")
-    parser.add_argument("--max_train_steps", type=int, default=int(550), help=" Maximum number of training steps")  # 2k
-    parser.add_argument("--epsilon_decay_steps", type=int, default=int(550),
+    parser.add_argument("--max_train_steps", type=int, default=int(350), help=" Maximum number of training steps")  # 2k
+    parser.add_argument("--epsilon_decay_steps", type=int, default=int(350),
                         help="How many steps before the epsilon decays to the minimum")  # 原本0.1e5
     parser.add_argument("--epsilon_init", type=float, default=0.5, help="Initial epsilon")
     parser.add_argument("--epsilon_min", type=float, default=0.1, help="Minimum epsilon")

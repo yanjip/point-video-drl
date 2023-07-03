@@ -438,30 +438,45 @@ class subEnvironment:
 
 class BeamformBL():
     def __init__(self, envBeam: upperEnvironmentBeam):
-        self.state_dim = envBeam.state_dim
-        self.action_dim = envBeam.action_dim
+        self.state_dim = para.K
+        self.action_dim = 4 * para.n_power_levels
         self.G = envBeam.G
         self.W = envBeam.W
         self.fix_W = self.W
-        self.minQoE_index = envBeam.minQoE_index
+        # self.minQoE_index = envBeam.minQoE_index
         self.codebook = para.get_codebook()
+        self.powerbook = np.arange(para.n_power_levels) * para.maxPower / (para.n_power_levels - 1)
+        self.times = 30
         pass
 
     def reset(self, ):
-        self.W = self.fix_W
+        self.W = self.codebook[0]
+        self.power = self.powerbook[para.n_power_levels - 1]
         self.SEmax = 0
-        return np.hstack((self.minQoE_index, self.sinr()))
+        self.index = 0
+        # return np.hstack((self.minQoE_index, self.sinr()))
+        return self.sinr()
 
         pass
 
     def step(self, action):
-        self.W = self.codebook[action]
+        self.index += 1
+        self.getAction(action)
         next_state = self.sinr()
         reward = (np.sum(np.log2(1 + next_state[-para.K:]))) / 10
         done = 0.0
-        next_state = np.hstack((self.minQoE_index, next_state))
+        # next_state = np.hstack((self.minQoE_index, next_state))
+        if self.index > self.times:
+            done = 1.0
         return next_state, reward, np.float32(done), None
 
+        pass
+
+    def getAction(self, action):
+        self.power_index = action % para.n_power_levels
+        self.code_index = action // para.n_power_levels
+        self.W = self.codebook[self.code_index]
+        self.power = self.powerbook[self.power_index]
         pass
 
     def sinr(self, ):
@@ -478,5 +493,5 @@ class BeamformBL():
             denom = interference
             if denom == 0:
                 denom += 1e-8
-            gamma[k] = numerator / denom * para.maxPower
+            gamma[k] = numerator / denom * self.power
         return gamma.astype(np.float32)

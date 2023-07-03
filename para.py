@@ -68,6 +68,9 @@ maxPower = 10.0
 area_size = 500
 max_timestamp = 40
 
+# basline
+n_power_levels = 5
+
 
 def cul_r(H_s, p):
     sinr = sum(H_s) / N0 * p
@@ -85,7 +88,14 @@ def px(x):
 
 
 def get_codebook():
-    mdict = sio.loadmat('beamforming/codebook2.mat')
-    # code_book = mdict['ans']
-    code_book = mdict['W']
-    return code_book
+    mdict = sio.loadmat('beamforming/codebook_dft44.mat')
+    code_book = mdict['ans']
+    # code_book = mdict['W']
+    c1 = np.transpose(code_book[:, [0, 1, 2]])
+    c2 = np.transpose(code_book[:, [0, 1, 3]])
+    c3 = np.transpose(code_book[:, [0, 2, 3]])
+    c4 = np.transpose(code_book[:, [1, 2, 3]])
+    stacked_matrix = np.stack((c1, c2, c3, c4))
+    return stacked_matrix
+
+# get_codebook()
