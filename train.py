@@ -124,6 +124,8 @@ class Runner():
             # Save reward
             # self.writer.add_scalar('step_rewards:', episode_reward, global_step=self.total_steps)
             rewards.append(episode_reward)
+            # rewards.append(sum(self.env.tile_QoE))
+
             if ma_rewards:
                 ma_rewards.append(0.9 * ma_rewards[-1] + 0.1 * episode_reward)
             else:
@@ -205,8 +207,8 @@ if __name__ == '__main__':
     curr_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     parser = argparse.ArgumentParser("Hyperparameter Setting for DQN")
     # parser.add_argument("--max_train_steps", type=int, default=int(4e5), help=" Maximum number of training steps")
-    parser.add_argument("--max_train_steps", type=int, default=int(550), help=" Maximum number of training steps")  # 2k
-    parser.add_argument("--epsilon_decay_steps", type=int, default=int(550),
+    parser.add_argument("--max_train_steps", type=int, default=int(450), help=" Maximum number of training steps")  # 2k
+    parser.add_argument("--epsilon_decay_steps", type=int, default=int(430),
                         help="How many steps before the epsilon decays to the minimum")  # 原本0.1e5
     parser.add_argument("--epsilon_init", type=float, default=0.5, help="Initial epsilon")
     parser.add_argument("--epsilon_min", type=float, default=0.1, help="Minimum epsilon")
@@ -214,7 +216,7 @@ if __name__ == '__main__':
                         help="Evaluate the policy every 'evaluate_freq' steps")
     parser.add_argument("--evaluate_times", type=float, default=1, help="Evaluate times")
 
-    parser.add_argument("--buffer_capacity", type=int, default=int(5000),
+    parser.add_argument("--buffer_capacity", type=int, default=int(8000),
                         help="The maximum replay-buffer capacity ")  # 原本0.1e5
     parser.add_argument("--batch_size", type=int, default=256, help="batch size")
     parser.add_argument("--hidden_dim", type=int, default=256,

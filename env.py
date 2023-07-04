@@ -8,13 +8,24 @@
 import numpy as np
 import para
 from tiles import tile
+
+seed = 10
+np.random.seed(seed)
+
+
 def linear_normalization(x):
     # return (x - min(tiles.M_all_bound)) / (max(tiles.M_all_bound) - min(tiles.M_all_bound))
     return (x - 0) / (para.bitrate - 0)
+
+
 def normalize(W):
     W = W / np.linalg.norm(W, axis=0)  # 列归一化，不用reshape
     return W
+
+
 z = 0.5
+
+
 def simulate_channel_response(num_users, num_antennas):
     r = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
     i = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
@@ -95,8 +106,8 @@ class upperEnvironmentBeam():
             self.best_sinr = next_state
 
         if minSINR == self.minQoE_index:
-            reward /= 1.5  # 1.5效果较好
-            # reward = -0.1
+            # reward /= 3.0  # 1.5效果较好
+            reward = -0.1
             pass
         # if maxSINR == self.minQoE_index:
         #     reward *= 1.5
@@ -296,37 +307,20 @@ class subEnvironment:
         # shared buffer
         # self.max_buffer_size = max_buffer_size
         # self.batch_size = batch_size
-        self.Dt = 0  # HMD的解码比特数
-        self.Dt_nor = 0.0
-        self.all_data = 0
-        self.data_tiles_nor = 0.0
+
         self.reward = 0.0
         self.Dmax = para.F_max * para.b_s * para.T_slot
         self.get_order()
         self.get_Q()
         pass
-    def get_z_nor(self, zi):
-        return (zi - 0) / (self.zmax - self.zmin)
-    def get_Q(self, ):
-        Q = []
-        for i in range(para.N_F):
-            q = self.z[i] * (1 / self.ttile.dis[self.searchId[i]]) * self.ttile.O[self.searchId[i]]
-            Q.append(q)
-        self.Q = np.array(Q)
-    def get_order(self, ):
-        ##self.Q=np.sort(self.Q_fov)[::-1]
-        # self.searchId=np.argsort(self.Q_fov)[::-1]
-        # 默认排序：
-        self.searchId = self.fov_tile_id
-        pass
-    def get_Index(self, index):
-        return self.searchId[index]
+
     def reset(self):
         # 统计结果信息：
         self.tile_QoE = []
         self.tile_data = []
         self.Tu_Td = []
-        self.Dt = 0
+        self.Dt = 0  # HMD的解码比特数
+        self.Dt_nor = 0.0
         self.Bt = 1  # 视频缓冲区 初始化为2s
         self.time_occu = 0.0
         self.done = 0
@@ -342,12 +336,14 @@ class subEnvironment:
         obs = np.array([self.time_occu, self.Dt_nor, dis_i, zi, Oi])
         return obs
         pass
-    def step(self,action,index):
-        if action<5:
-            k=1      #1表示压缩
-        else: k=0
-        l=action  #范围就是0-9
-        Mil=self.action_value[l]*self.Mi
+
+    def step(self, action, index):
+        if action < 5:
+            k = 1  # 1表示压缩
+        else:
+            k = 0
+        l = action  # 范围就是0-9
+        Mil = self.action_value[l] * self.Mi
         # 既然Tu算不了，就先把传输的比特数作为环境，归一化(可以算了
         data_tiles = k * Mil * para.co_ratio + (1 - k) * Mil
         self.tile_data.append(data_tiles)
@@ -377,10 +373,9 @@ class subEnvironment:
         #     p -= 25
         # q = 40 / dis_i * zi * li * (1 / Oi)
         zi_nor = self.get_z_nor(zi)
-        q = fx(dis_i) * fx(Oi) * (zi_nor + li) * 10
+        q = fx(dis_i) * fx(Oi) * (zi_nor + 2 * li) * 1.0
         reward = p + q
-        if self.time_occu > 1:
-            reward /= 10.0
+
         self.tile_QoE.append(q)
         # reward = min(15, reward)
         # if k==0:
@@ -400,14 +395,20 @@ class subEnvironment:
             # r = li+4
             # r=0.1*(li+4)
             # r = 0.1 * li
-            reward *= 2.5
+            # reward *= 1.3
+            pass
         # r =reward*li
         if k == 1 and self.Dt > self.Dmax:
-            reward /= 3.0
+            # reward /= 1.5
+            reward = -1
         # reward += r
         # self.index += 1
+        if self.time_occu > 1:
+            reward /= 8.0
+            # reward = -0.1
+
         if index == para.N_F:
-            self.done = 1
+            self.done = 1.0
             # self.index=0
         if self.done != 1:
             dis_i = self.ttile.dis[self.searchId[index]]
@@ -418,6 +419,26 @@ class subEnvironment:
         else:
             next_obs = np.array([0., 0., 0., 0., 0.])
         return next_obs, reward, self.done, None
+
+    def get_z_nor(self, zi):
+        return (zi - 0) / (self.zmax - self.zmin)
+
+    def get_Q(self, ):
+        Q = []
+        for i in range(para.N_F):
+            q = self.z[i] * (1 / self.ttile.dis[self.searchId[i]]) * self.ttile.O[self.searchId[i]]
+            Q.append(q)
+        self.Q = np.array(Q)
+
+    def get_order(self, ):
+        ##self.Q=np.sort(self.Q_fov)[::-1]
+        # self.searchId=np.argsort(self.Q_fov)[::-1]
+        # 默认排序：
+        self.searchId = self.fov_tile_id
+        pass
+    def get_Index(self, index):
+        return self.searchId[index]
+
     def get_info(self, ):
         # 设置打印选项，保留2位小数
         np.set_printoptions(precision=2)

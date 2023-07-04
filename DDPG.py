@@ -19,6 +19,10 @@ import torch.nn.functional as F
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
 
+seed = 10
+np.random.seed(seed)
+torch.manual_seed(seed)
+
 
 def chinese_font():
     try:
@@ -39,13 +43,13 @@ import para
 
 
 class OUNoise(object):
-    def __init__(self, action_space, mu=0.0, theta=0.15, max_sigma=0.4, min_sigma=0.1, decay_period=1000):  # 原本100000
+    def __init__(self, action_space, mu=0.0, theta=0.15, max_sigma=0.5, min_sigma=0.1, decay_period=1000):  # 原本100000
         self.mu = mu  # OU噪声的参数
         self.theta = theta  # OU噪声的参数
         self.sigma = max_sigma  # OU噪声的参数
         self.max_sigma = max_sigma
         self.min_sigma = min_sigma
-        self.decay_period = decay_period - 20
+        self.decay_period = decay_period - 50
         self.n_actions = action_space
         self.low = -1
         # self.high = np.sqrt(para.maxPower)

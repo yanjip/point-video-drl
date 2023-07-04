@@ -109,18 +109,18 @@ if __name__ == '__main__':
 
     ttile = CustomUnpickler(open('tiles.pkl', 'rb')).load()
 
-    writer2 = SummaryWriter(log_dir='runs/evaluate')
+    # writer2 = SummaryWriter(log_dir='runs/evaluate')
 
     # 测试加载训练好的agent
-    for i in range(30):
-        fov_id = np.random.randint(0, N_fovs)
-        print(fov_id)
-        runner = Runner(args=args, ttile=ttile, fov_id=fov_id)
-        # runner.run()
-
-        episode_reward = runner.evaluate_online()
-        writer2.add_scalar('evaluate_rewards:', episode_reward, global_step=i + 1)
+    # for i in range(30):
+    #     fov_id = np.random.randint(0, N_fovs)
+    #     print(fov_id)
+    #     runner = Runner(args=args, ttile=ttile, fov_id=fov_id)
+    #     # runner.run()
+    #
+    #     episode_reward = runner.evaluate_online()
+    #     writer2.add_scalar('evaluate_rewards:', episode_reward, global_step=i + 1)
 
     # 测试baseline
-    # runner = Runner(args=args, ttile=ttile, fov_id=3)
-    # runner.greedy(fov_id=3)
+    runner = Runner(args=args, ttile=ttile, fov_id=3)
+    runner.greedy(fov_id=3)

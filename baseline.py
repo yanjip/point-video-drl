@@ -41,15 +41,15 @@ class greedyMethod():
 
         # self.index=0
 
-        self.trans = transmission(para.Pmax)
+        self.trans = transmission(para.Pmax, para.sinr)
 
         self.action_value = [1.0, 0.8, 0.6, 0.4, 0.2, 0.2, 0.4, 0.6, 0.8, 1.0]  # 压缩->未压缩
 
         self.Dt = 0  # HMD的解码比特数
         self.all_data = 0
         self.data_tiles_nor = 0.0
-        # self.Dmax = para.F_max * para.b_s * para.T_slot/10
-        self.Dmax = 0
+        self.Dmax = para.F_max * para.b_s * para.T_slot
+        # self.Dmax = 0
         self.searchId = self.fov_tile_id
 
         self.actions = [5] * para.N_F
@@ -80,7 +80,7 @@ class greedyMethod():
         self.time_occu += (self.Tu + self.Td) / para.T_slot
 
     def get_QoE(self, dis_i, Oi, zi_nor, li):
-        q = fx(dis_i) * fx(Oi) * (zi_nor + li) * 10
+        q = fx(dis_i) * fx(Oi) * (zi_nor + 2 * li) * 1.0
         self.QoE += q
         pass
 
@@ -92,26 +92,28 @@ class greedyMethod():
         zi_nor = self.get_z_nor(zi)
         print(self.time_occu)
         if self.Dmax > self.Dt and self.time_occu < 1:
-            self.actions[index] = 0
+            self.actions[index] = 0  # 小于5表示压缩
             Mil_com = self.action_value[0] * self.Mi * para.co_ratio
             self.Dt += Mil_com
-            Td = (Mil_com / (para.F_max * para.b_s)) / para.T_slot
+            Td = (Mil_com / (para.F_max * para.b_s))
             Tu = (Mil_com - self.action_value[5] * self.Mi) / self.trans.rt
             self.Tu_Td.append([Td, Tu])
             self.time_occu += ((Tu + Td) / para.T_slot)
             li = abs(0 - 4.5) + 0.5
             self.get_QoE(dis_i, Oi, zi_nor, li)
-
             return
-        if self.time_occu < 1:
+        if self.Dmax < self.Dt:
+            x = 1
+            print(self.time_occu)
+            pass
+        if self.Dmax < self.Dt and self.time_occu < 1:
             self.actions[index] = 9
             Mil = self.action_value[9] * self.Mi
             Tu = (Mil - self.action_value[5] * self.Mi) / self.trans.rt
             self.time_occu += (Tu / para.T_slot)
+            self.Tu_Td.append([Tu, 0])
             li = abs(9 - 4.5) + 0.5
             self.get_QoE(dis_i, Oi, zi_nor, li)
-            self.Tu_Td.append([Tu, 0])
-
             return
         li = 1
         # self.Tu_Td.append([Tu, 0])
