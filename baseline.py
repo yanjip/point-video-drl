@@ -80,7 +80,8 @@ class greedyMethod():
         self.time_occu += (self.Tu + self.Td) / para.T_slot
 
     def get_QoE(self, dis_i, Oi, zi_nor, li):
-        q = fx(dis_i) * fx(Oi) * (zi_nor + 2 * li) * 1.0
+        # q = fx(dis_i) + fx(Oi) + (zi_nor +  li) * 1.0
+        q = para.get_QoE(dis_i, Oi, zi_nor, li)
         self.QoE += q
         pass
 
@@ -90,7 +91,7 @@ class greedyMethod():
         zi = self.z[index]
         Oi = self.ttile.O[self.searchId[index]]
         zi_nor = self.get_z_nor(zi)
-        print(self.time_occu)
+        # print(self.time_occu)
         if self.Dmax > self.Dt and self.time_occu < 1:
             self.actions[index] = 0  # 小于5表示压缩
             Mil_com = self.action_value[0] * self.Mi * para.co_ratio
@@ -106,6 +107,7 @@ class greedyMethod():
             x = 1
             print(self.time_occu)
             pass
+        # 为什么跳不进去呢？因为前面一直在选质量最好数据量最大的level，同时通信资源不够，所以time_occu更快>1
         if self.Dmax < self.Dt and self.time_occu < 1:
             self.actions[index] = 9
             Mil = self.action_value[9] * self.Mi
@@ -122,7 +124,7 @@ class greedyMethod():
         pass
 
     def get_info(self, ):
-        print("action:", self.actions)
+        print("\t-----greedy:-----\naction:", self.actions)
         print("QoE:", self.QoE)
         print("time_consum:", self.time_occu)
 

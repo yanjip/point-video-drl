@@ -117,7 +117,7 @@ class Runner():
             if not self.args.use_noisy:  # Decay epsilon
                 self.epsilon = self.epsilon - self.epsilon_decay if self.epsilon - self.epsilon_decay > self.epsilon_min else self.epsilon_min
 
-            if self.total_steps % 20 == 0:
+            if self.total_steps % 40 == 0:
                 # self.evaluate_policy()
                 self.print_res(res, episode_reward)
                 pass
@@ -142,8 +142,9 @@ class Runner():
         # torch.save(model.state_dict(), 'model.pt')
 
         # 保存 agent
-        # with open('runs/model/agent.pkl', 'wb') as f:
-        #     pickle.dump(self.agent, f)
+        with open('runs/model/agent_choose.pkl', 'wb') as f:
+            pickle.dump(self.agent, f)
+        self.evaluate_policy()
         self.evaluate_policy()
 
     def greedy(self, ):
@@ -216,7 +217,7 @@ if __name__ == '__main__':
                         help="Evaluate the policy every 'evaluate_freq' steps")
     parser.add_argument("--evaluate_times", type=float, default=1, help="Evaluate times")
 
-    parser.add_argument("--buffer_capacity", type=int, default=int(8000),
+    parser.add_argument("--buffer_capacity", type=int, default=int(10000),
                         help="The maximum replay-buffer capacity ")  # 原本0.1e5
     parser.add_argument("--batch_size", type=int, default=256, help="batch size")
     parser.add_argument("--hidden_dim", type=int, default=256,

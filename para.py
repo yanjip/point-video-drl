@@ -21,7 +21,7 @@ GHZ = MHZ*1e3
 N_aps = 4  # APs
 
 # Channels
-B = 40 * MHZ  # MHz
+B = 50 * MHZ  # MHz
 N0 = 1e-9  # 单位：W The variance of complex white Gaussian channel noise
 # 生成信道数据
 # H = np.random.rayleigh(scale=1, size= self.N)*1e-3
@@ -51,17 +51,17 @@ quality_level = {1: 0.2, 2: 0.4, 3: 0.6, 4: 0.8, 5: 1.0}
 a1 = 0.5
 a2 = 0.5
 
-T_slot = 0.3
+T_slot = 0.2
 
 # UE
-F_max = 0.08e9  # cycles/s MEC那篇论文为0.5G    0.3e8
-b_s = 0.005e3  # bits/cycle  MEC   之前0.02
+F_max = 0.05e9  # cycles/s MEC那篇论文为0.5G    0.3e8
+b_s = 0.01e3  # bits/cycle  MEC   之前0.02
 D_max = 1 * GB  # HMD的处理区数据量大小
 
 K = 3  # user number
 Bt = 2.0  # 设备的初始化视频缓冲区
 QoE0 = 10
-sinr = 44.0
+sinr = 30.0
 
 # upper para
 maxPower = 10.0
@@ -98,4 +98,15 @@ def get_codebook():
     stacked_matrix = np.stack((c1, c2, c3, c4))
     return stacked_matrix
 
+
 # get_codebook()
+z = 0.5
+
+
+def fx(x):
+    return np.exp(-z * x)
+
+
+def get_QoE(dis_i, Oi, zi_nor, li):
+    q = fx(dis_i) + fx(Oi) + (zi_nor + 2 * li / 5)
+    return q
