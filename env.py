@@ -399,7 +399,7 @@ class subEnvironment:
         # r =reward*li
         if k == 1 and self.Dt > self.Dmax:
             # reward /= 1.5
-            reward = -10.0
+            # reward = -5.0
             pass
         # reward += r
         # self.index += 1
@@ -407,6 +407,8 @@ class subEnvironment:
             # reward /= 2.0
             # reward = -0.1
             # reward-=(self.time_occu-1)*10
+            reward = -(self.time_occu - 1) * 4
+
             pass
 
         if index == para.N_F:
@@ -593,7 +595,7 @@ class env_uncompress():
         if self.time_occu > 1:
             # reward /= 2.0
             # reward = -0.1
-            reward = -(self.time_occu - 1) * 10
+            reward -= (self.time_occu - 1) * 3
             pass
 
         if index == para.N_F:
@@ -607,7 +609,7 @@ class env_uncompress():
             zi *= 10
             next_obs = np.array([self.time_occu, dis_i, zi, Oi])
         else:
-            # if self.time_occu>1: reward*=10
+            if self.time_occu > 1: reward = -10
             next_obs = np.array([0., 0., 0., 0.])
         return next_obs, reward, self.done, None
 
@@ -627,13 +629,6 @@ class env_uncompress():
     def get_info(self, ):
         # 设置打印选项，保留2位小数
         np.set_printoptions(precision=2)
-        print("tile_id：", self.fov_tile_id)
-        print("distance：", self.dis)
-        if type(self.ttile.O) == list:
-            O = np.array(self.ttile.O)
-        else:
-            O = self.ttile.O
-        print("遮挡等级：", O[self.searchId])
         # print("tile_datasize:", self.tile_data)
         tile_QoE = np.array(self.tile_QoE)
         # print("Tu_Td:", self.Tu_Td)

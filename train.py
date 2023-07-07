@@ -83,7 +83,7 @@ class Runner():
             self.epsilon_decay = (self.args.epsilon_init - self.args.epsilon_min) / self.args.epsilon_decay_steps
 
     def run(self, ):
-        # self.evaluate_policy()
+        self.evaluate_policy()
         startTime = time.time()
         rewards = []  # 记录所有回合的奖励
         ma_rewards = []  # 记录所有回合的滑动平均奖励
@@ -182,6 +182,16 @@ class Runner():
         # self.writer.add_scalar('evaluate_rewards:', evaluate_reward, global_step=self.total_steps)
         # 统计结果
         self.print_res(res, evaluate_reward)
+
+        # state = self.env.reset()
+        # action1=[0, 0, 0, 0, 0, 0, 0, 0, 5, 5, 5, 5]
+        # evaluate_reward = 0
+        # res = []
+        # for i in range(len(action1)):
+        #     action=action1[i]
+        #     next_state, reward, done, _ = self.env.step(action, i+1)
+        #
+        # self.env.get_info()
 
     def print_res(self, res, episode_reward):
         print("-----------------total_steps:{} \t evaluate_reward:{} \t epsilon：{}".format(self.total_steps,

@@ -54,8 +54,8 @@ a2 = 0.5
 T_slot = 0.2
 
 # UE
-F_max = 0.05e9  # cycles/s MEC那篇论文为0.5G    0.3e8
-b_s = 0.01e3  # bits/cycle  MEC   之前0.02
+F_max = 0.5e9  # cycles/s MEC那篇论文为0.5G    0.3e8
+b_s = 0.03e3  # bits/cycle  MEC   之前0.02
 D_max = 1 * GB  # HMD的处理区数据量大小
 
 K = 3  # user number
@@ -108,5 +108,5 @@ def fx(x):
 
 
 def get_QoE(dis_i, Oi, zi_nor, li):
-    q = fx(dis_i) + fx(Oi) + (zi_nor + 2 * li / 5)
+    q = fx(dis_i) * fx(Oi) * (zi_nor + 4 * li / 5)
     return q

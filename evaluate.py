@@ -36,6 +36,7 @@ class Runner():
     def __init__(self, args, ttile: tile, fov_id):
         self.args = args
         self.env = env.subEnvironment(1, ttile, fov_id)
+        self.env2 = env.env_uncompress(1, ttile, fov_id)
         self.args.state_dim = self.env.state_dim
         self.args.action_dim = self.env.action_dim
 
@@ -45,6 +46,9 @@ class Runner():
         self.agent = agent
 
         # self.writer = SummaryWriter(log_dir='runs/DQN_{}/seed_{}'.format(self.algorithm,  seed))
+        with open('runs/model/agent_choose_uncompress.pkl', 'rb') as f:
+            agent2 = pickle.load(f)
+        self.agent2 = agent2
 
     def evaluate_online(self, ):
 
@@ -84,6 +88,32 @@ class Runner():
             self.env.get_info()
         return r
 
+    def evaluate_uncompress(self, ):
+        r = 0
+        for i in range(1):
+            res = []
+            state = self.env2.reset()
+            done = False
+            episode_reward = 0
+            episode_steps = 0
+            while not done:
+                action = self.agent2.choose_action(state, epsilon=0)
+                res.append(action)
+                episode_steps += 1
+                next_state, reward, done, _ = self.env2.step(action, episode_steps)
+                episode_reward += reward
+                state = next_state
+            # evaluate_reward += episode_reward
+            # self.agent.net.train()
+            # self.evaluate_rewards.append(evaluate_reward)
+            # print("###########     {}     ###########\n".format(evaluate_reward))
+            r = episode_reward
+            print("\n \t------baseline:uncompress-------")
+            # 统计结果
+            print(res)
+            self.env2.get_info()
+        return r
+
     def greedy(self, fov_id):
         self.baseline = baseline.greedyMethod(ttile, fov_id)
         self.baseline.reset()
@@ -119,6 +149,8 @@ if __name__ == '__main__':
         # runner.run()
 
         episode_reward = runner.evaluate_online()
+        episode_reward2 = runner.evaluate_uncompress()
+
         # writer2.add_scalar('evaluate_rewards:', episode_reward, global_step=i + 1)
         runner.greedy(fov_id)
 

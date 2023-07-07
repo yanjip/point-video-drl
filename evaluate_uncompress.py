@@ -169,8 +169,8 @@ if __name__ == '__main__':
     curr_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
     parser = argparse.ArgumentParser("Hyperparameter Setting for DQN")
     # parser.add_argument("--max_train_steps", type=int, default=int(4e5), help=" Maximum number of training steps")
-    parser.add_argument("--max_train_steps", type=int, default=int(450), help=" Maximum number of training steps")  # 2k
-    parser.add_argument("--epsilon_decay_steps", type=int, default=int(430),
+    parser.add_argument("--max_train_steps", type=int, default=int(350), help=" Maximum number of training steps")  # 2k
+    parser.add_argument("--epsilon_decay_steps", type=int, default=int(330),
                         help="How many steps before the epsilon decays to the minimum")  # 原本0.1e5
     parser.add_argument("--epsilon_init", type=float, default=0.5, help="Initial epsilon")
     parser.add_argument("--epsilon_min", type=float, default=0.1, help="Minimum epsilon")

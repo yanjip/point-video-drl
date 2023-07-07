@@ -100,6 +100,10 @@ class greedyMethod():
             Tu = (Mil_com - self.action_value[5] * self.Mi) / self.trans.rt
             self.Tu_Td.append([Td, Tu])
             self.time_occu += ((Tu + Td) / para.T_slot)
+            if self.time_occu > 1:
+                self.actions[index] = 5  # 小于5表示压缩
+                self.time_occu -= ((Tu + Td) / para.T_slot)
+                return
             li = abs(0 - 4.5) + 0.5
             self.get_QoE(dis_i, Oi, zi_nor, li)
             return
