@@ -164,3 +164,6 @@ tile那个文件里设置了！
 因此现在需要调的是T_slot和计算能力的大小。
 > 我需要Dt（与T无关）大于Dmax(与T有关)时，time_occu 仍然小于1
 > 而time_occu 又与 计算能力有关
+>
+# 7.7日 
+greedy算法终于比proposed算法QoE低了了！但proposed没有收敛！

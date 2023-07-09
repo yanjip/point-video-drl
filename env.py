@@ -404,10 +404,10 @@ class subEnvironment:
         # reward += r
         # self.index += 1
         if self.time_occu > 1:
-            # reward /= 2.0
+            # reward /= 5.0
             # reward = -0.1
             # reward-=(self.time_occu-1)*10
-            reward = -(self.time_occu - 1) * 4
+            reward -= (self.time_occu - 1) * 4
 
             pass
 
@@ -459,7 +459,9 @@ class subEnvironment:
         # print("Tu_Td:", self.Tu_Td)
         print("time_consum:", self.time_occu)
         print("QoE:", tile_QoE)
-        print("sum_QoE:", sum(self.tile_QoE), end='\n\n')
+        s = sum(self.tile_QoE)
+        print("sum_QoE:", s, end='\n\n')
+        return s
 
 
 class BeamformBL():
@@ -634,4 +636,6 @@ class env_uncompress():
         # print("Tu_Td:", self.Tu_Td)
         print("time_consum:", self.time_occu)
         print("QoE:", tile_QoE)
-        print("sum_QoE:", sum(self.tile_QoE), end='\n\n')
+        s = sum(self.tile_QoE)
+        print("sum_QoE:", s, end='\n\n')
+        return s

@@ -131,7 +131,7 @@ class greedyMethod():
         print("\t-----greedy:-----\naction:", self.actions)
         print("QoE:", self.QoE)
         print("time_consum:", self.time_occu)
-
+        return self.QoE
         pass
 
     def get_z_nor(self, zi):

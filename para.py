@@ -51,7 +51,7 @@ quality_level = {1: 0.2, 2: 0.4, 3: 0.6, 4: 0.8, 5: 1.0}
 a1 = 0.5
 a2 = 0.5
 
-T_slot = 0.2
+T_slot = 0.10
 
 # UE
 F_max = 0.5e9  # cycles/s MEC那篇论文为0.5G    0.3e8
@@ -101,7 +101,7 @@ def get_codebook():
 
 # get_codebook()
 z = 0.5
-
+flag = 0
 
 def fx(x):
     return np.exp(-z * x)
@@ -109,4 +109,7 @@ def fx(x):
 
 def get_QoE(dis_i, Oi, zi_nor, li):
     q = fx(dis_i) * fx(Oi) * (zi_nor + 4 * li / 5)
+    # global flag
+    # flag=max(flag,zi_nor)
+    # print("zi_nor:",flag) #2.4689592944196628
     return q

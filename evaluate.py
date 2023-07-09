@@ -19,6 +19,7 @@ from dqn import DQN
 from replay_buffer import N_Steps_Prioritized_ReplayBuffer
 from tiles import tile
 from torch.utils.tensorboard import SummaryWriter
+import Draw_pic
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -40,7 +41,7 @@ class Runner():
         self.args.state_dim = self.env.state_dim
         self.args.action_dim = self.env.action_dim
 
-        with open('runs/model/agent_choose.pkl', 'rb') as f:
+        with open('runs/model/agent_choose_7_7.pkl', 'rb') as f:
             agent = pickle.load(f)
 
         self.agent = agent
@@ -85,8 +86,8 @@ class Runner():
                 new_res.append([k, l])
             self.new_res = new_res
             print(new_res)
-            self.env.get_info()
-        return r
+            qoe = self.env.get_info()
+        return qoe
 
     def evaluate_uncompress(self, ):
         r = 0
@@ -111,15 +112,16 @@ class Runner():
             print("\n \t------baseline:uncompress-------")
             # 统计结果
             print(res)
-            self.env2.get_info()
-        return r
+            qoe = self.env2.get_info()
+        return qoe
 
     def greedy(self, fov_id):
         self.baseline = baseline.greedyMethod(ttile, fov_id)
         self.baseline.reset()
         for index in range(0, N_F):
             self.baseline.step(index)
-        self.baseline.get_info()
+        qoe = self.baseline.get_info()
+        return qoe
         pass
 
 
@@ -142,18 +144,26 @@ if __name__ == '__main__':
     # writer2 = SummaryWriter(log_dir='runs/evaluate')
 
     # 测试加载训练好的agent
+    proposed = []
+    uncompress = []
+    greedy = []
+    fov_ids = []
     for i in range(10):
         fov_id = np.random.randint(0, N_fovs)
+        fov_ids.append(fov_id)
         print("\nfov_id:", fov_id)
         runner = Runner(args=args, ttile=ttile, fov_id=fov_id)
         # runner.run()
 
-        episode_reward = runner.evaluate_online()
-        episode_reward2 = runner.evaluate_uncompress()
-
+        qoe1 = runner.evaluate_online()
+        qoe2 = runner.evaluate_uncompress()
         # writer2.add_scalar('evaluate_rewards:', episode_reward, global_step=i + 1)
-        runner.greedy(fov_id)
-
+        qoe3 = runner.greedy(fov_id)
+        proposed.append(qoe1)
+        uncompress.append(qoe2)
+        greedy.append(qoe3)
+    x = 4
+    Draw_pic.draw_evaluate(fov_ids, proposed, uncompress, greedy)
     # 测试baseline
     # runner = Runner(args=args, ttile=ttile, fov_id=3)
     # runner.greedy(fov_id=2)
