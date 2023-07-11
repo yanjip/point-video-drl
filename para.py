@@ -51,10 +51,10 @@ quality_level = {1: 0.2, 2: 0.4, 3: 0.6, 4: 0.8, 5: 1.0}
 a1 = 0.5
 a2 = 0.5
 
-T_slot = 0.10
+T_slot = 0.15  # 原本0.2 大于了效果就不好了
 
 # UE
-F_max = 0.5e9  # cycles/s MEC那篇论文为0.5G    0.3e8
+F_max = 0.5e9  # cycles/s MEC那篇论文为0.5G    0.5e9
 b_s = 0.03e3  # bits/cycle  MEC   之前0.02
 D_max = 1 * GB  # HMD的处理区数据量大小
 

@@ -147,7 +147,7 @@ if __name__ == '__main__':
     # 相关参数设置
     parser = argparse.ArgumentParser(description="hyper parameters")
     parser.add_argument('--algo_name', default='DDPG', type=str, help="name of algorithm")
-    parser.add_argument('--train_eps', default=250, type=int, help="episodes of training")  # 原本150
+    parser.add_argument('--train_eps', default=350, type=int, help="episodes of training")  # 原本150
     parser.add_argument('--test_eps', default=70, type=int, help="episodes of testing")
     parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
     parser.add_argument('--critic_lr', default=0.5e-3, type=float, help="learning rate of critic")

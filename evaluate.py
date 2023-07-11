@@ -124,6 +124,14 @@ class Runner():
         return qoe
         pass
 
+    def coarsness(self, fov_id):
+        self.baseline_coarsness = baseline.tileCoarsness(ttile, fov_id)
+        self.baseline_coarsness.reset()
+        self.baseline_coarsness.step()
+
+        qoe = self.baseline_coarsness.get_info()
+        return qoe
+
 
 import time
 
@@ -147,6 +155,7 @@ if __name__ == '__main__':
     proposed = []
     uncompress = []
     greedy = []
+    coarsness = []
     fov_ids = []
     for i in range(10):
         fov_id = np.random.randint(0, N_fovs)
@@ -159,11 +168,18 @@ if __name__ == '__main__':
         qoe2 = runner.evaluate_uncompress()
         # writer2.add_scalar('evaluate_rewards:', episode_reward, global_step=i + 1)
         qoe3 = runner.greedy(fov_id)
+        qoe4 = runner.coarsness(fov_id=2)
+
         proposed.append(qoe1)
         uncompress.append(qoe2)
         greedy.append(qoe3)
-    x = 4
-    Draw_pic.draw_evaluate(fov_ids, proposed, uncompress, greedy)
-    # 测试baseline
+        coarsness.append(qoe4)
+    Draw_pic.draw_evaluate(fov_ids, proposed, uncompress, greedy, coarsness)
+
+    # 测试baseline-greedy
     # runner = Runner(args=args, ttile=ttile, fov_id=3)
     # runner.greedy(fov_id=2)
+    #
+    # # 测试baseline-greedy
+    # runner = Runner(args=args, ttile=ttile, fov_id=2)
+    # runner.coarsness(fov_id=2)

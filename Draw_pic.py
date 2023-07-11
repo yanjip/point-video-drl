@@ -161,11 +161,12 @@ def write_sinr(sinr, SE):
         F.write("SINR:" + str(sinr) + "       SE_all:" + str(SE) + "\n\n")
 
 
-def draw_evaluate(fov_id, proposed, uncompress, greedy):
+def draw_evaluate(fov_id, proposed, uncompress, greedy, coarsness):
     # 绘制散点图
     plt.scatter(fov_id, proposed, c='red', label='Proposed')
     plt.scatter(fov_id, uncompress, c='blue', label='Uncompress')
     plt.scatter(fov_id, greedy, c='green', label='Greedy')
+    plt.scatter(fov_id, coarsness, c='orange', label='coarsness')
 
     # 添加图例
     plt.legend()
@@ -173,6 +174,9 @@ def draw_evaluate(fov_id, proposed, uncompress, greedy):
     # 添加坐标轴标签
     plt.ylabel('QoE')
     plt.xlabel('FoV_ID')
+    a = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+
+    plt.savefig("runs/baseline/performance_compare" + a)
 
     # 显示图形
     plt.show()

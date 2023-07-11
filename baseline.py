@@ -136,3 +136,77 @@ class greedyMethod():
 
     def get_z_nor(self, zi):
         return (zi - 0) / (self.zmax - self.zmin)
+
+
+class tileCoarsness:
+    def __init__(self, ttile: tile, fov_id):
+        self.fov_id = fov_id
+        self.ttile = ttile
+        self.fov = ttile.Fovs_tile_id[fov_id]
+        self.fov_tile_id = ttile.Fovs_tile_id[fov_id]
+        self.dis = ttile.dis[self.fov_tile_id]
+        self.z = ttile.get_z(fov_id, self.fov_tile_id)
+        self.zmin = min(self.z)
+        self.zmax = max(self.z)
+        self.Mi = para.bitrate
+        self.trans = transmission(para.Pmax, para.sinr)
+        self.action_value = [1.0, 0.8, 0.6, 0.4, 0.2, 0.2, 0.4, 0.6, 0.8, 1.0]  # 压缩->未压缩
+        self.Dt = 0  # HMD的解码比特数
+        self.all_data = 0
+        self.data_tiles_nor = 0.0
+        self.Dmax = para.F_max * para.b_s * para.T_slot
+        self.searchId = self.fov_tile_id
+        self.actions = -1
+        self.QoE = 0
+        # self.li=0  #最低的等级
+
+    def reset(self):
+        # 统计结果信息：
+        self.Dt = 0
+        self.time_occu = 0.0
+        self.done = 0
+
+    def get_QoE(self, dis_i, Oi, zi_nor, li):
+        # q = fx(dis_i) + fx(Oi) + (zi_nor +  li) * 1.0
+        q = para.get_QoE(dis_i, Oi, zi_nor, li)
+        return q
+        pass
+
+    def step(self, ):
+        for action in range(10):
+            QoE_now = 0
+            self.Dt = 0
+            time_occu = 0.0
+            li = abs(action - 4.5) + 0.5  # 最小值为1
+            Mil = self.action_value[action] * self.Mi
+            for index in range(para.N_F):
+                dis_i = self.ttile.dis[self.searchId[index]]
+                zi = self.z[index]
+                Oi = self.ttile.O[self.searchId[index]]
+                zi_nor = self.get_z_nor(zi)
+                QoE_now += self.get_QoE(dis_i, Oi, zi_nor, li)
+                if action < 5:
+                    Mil_com = Mil * para.co_ratio
+                    self.Dt += Mil_com
+                    Td = (Mil_com / (para.F_max * para.b_s))
+                    Tu = Mil_com / self.trans.rt
+                else:
+                    Td = 0
+                    Tu = Mil / self.trans.rt
+                time_occu += (Tu + Td) / para.T_slot
+            if time_occu < 1 and self.Dt < self.Dmax and QoE_now > self.QoE:
+                self.QoE = QoE_now
+                self.actions = li
+                self.time_occu = time_occu
+            pass
+        pass
+
+    def get_info(self, ):
+        print("\n\t-----Coarsness_Method:-----\naction:", self.actions)
+        print("QoE:", self.QoE)
+        print("time_consum:", self.time_occu)
+        return self.QoE
+        pass
+
+    def get_z_nor(self, zi):
+        return (zi - 0) / (self.zmax - self.zmin)
