@@ -142,14 +142,6 @@ class Runner():
             pickle.dump(self.agent, f)
         # self.evaluate_policy()
 
-    def greedy(self, ):
-        self.baseline = baseline.greedyMethod(ttile, fov_id)
-        self.baseline.reset()
-        for index in range(0, N_F):
-            self.baseline.step(index)
-        self.baseline.get_info()
-        pass
-
     def evaluate_policy(self, ):
         evaluate_reward = 0
         self.agent.net.eval()  # 模型不会更新参数，也不会使用一些只在训练时有效的层，例如dropout或batch normalization。这样可以提高模型的预测性能和稳定性。

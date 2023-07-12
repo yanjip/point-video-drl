@@ -181,6 +181,40 @@ def draw_evaluate(fov_id, proposed, uncompress, greedy, coarsness):
     # 显示图形
     plt.show()
 
+def plot_QoE_t(ts, proposed, uncompress, greedy, coarsness):
+    plt.rcParams['font.sans-serif'] = ['SimHei']
+    plt.plot(ts, proposed, marker='o', label='proposed')  ## 使用圆形节点
+    plt.plot(ts, uncompress, marker='s', label='uncompress')  # 使用方形节点
+    plt.plot(ts, greedy, marker='^', label='greedy')  # 使用三角形节点
+    plt.plot(ts, coarsness, marker='+', label='coarsness')
+
+    plt.legend(loc='best')
+    plt.xlabel('T_slot (s)')
+    plt.ylabel('Quality of Video')
+    plt.title('Playback Quality with Different Time-Slot Length')
+
+    a = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    plt.savefig("runs/baseline/T_QoE" + a)
+    # 显示图形
+    plt.show()
+
+
+def plot_QoE_F(Fs, proposed, uncompress, greedy, coarsness):
+    # plt.rcParams['font.sans-serif'] = ['SimHei']
+    plt.plot(Fs, proposed, marker='o', label='proposed')  ## 使用圆形节点
+    plt.plot(Fs, uncompress, marker='s', label='uncompress')  # 使用方形节点
+    plt.plot(Fs, greedy, marker='^', label='greedy')  # 使用三角形节点
+    plt.plot(Fs, coarsness, marker='+', label='coarsness')
+
+    plt.legend(loc='best')
+    plt.xlabel('Computation Capacity (GHz)')
+    plt.ylabel('Quality of Video')
+    plt.title('Playback Quality with Different Computation Capabilities')
+    a = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    plt.savefig("runs/baseline/F_QoE-" + a)
+    # 显示图形
+    plt.show()
+
 
 if __name__ == '__main__':
     # sinr = [11.379501, 4.522286, 41.942398]

@@ -9,6 +9,7 @@ import para
 from torch.utils.tensorboard import SummaryWriter
 from Draw_pic import *
 import saveH_W
+import pickle
 
 def create_env_agent(arg_dict):
     env_beam = env.upperEnvironmentBeam()  # 装饰action噪声
@@ -91,13 +92,13 @@ def train(arg_dict, env_beam, agent):
 
 
 # 测试函数
-def test(arg_dict, env_beam, agent):
+def test(arg_dict, env_beam, agent, test_eps):
     startTime = time.time()
     print("开始测试智能体......")
     # print(f"环境名: {arg_dict['env_name']}, 算法名: {arg_dict['algo_name']}, Device: {arg_dict['device']}")
     rewards = []  # 记录所有回合的奖励
     ma_rewards = []  # 记录所有回合的滑动平均奖励
-    for i_ep in range(arg_dict['test_eps']):
+    for i_ep in range(test_eps):
         env_beam = env.upperEnvironmentBeam()  # 装饰action噪声
         state = env_beam.reset()
         done = False
@@ -168,10 +169,10 @@ if __name__ == '__main__':
     arg_dict = {**vars(args)}
     print("算法参数字典:", arg_dict)
 
-    train_flag = True
-    test_flag = False
-    # train_flag = False
-    # test_flag = True
+    # train_flag = True
+    # test_flag = False
+    train_flag = False
+    test_flag = True
     # -------------------------训练----------------------------------------------------#
     if train_flag:
         # 创建环境和智能体
@@ -194,8 +195,27 @@ if __name__ == '__main__':
 
         env_beam, agent = create_env_agent(arg_dict)
         # 加载已保存的智能体
-        agent.load_model(path='runs/model/upper_agent_UE3.pt')
-        res_dic = test(arg_dict, env_beam, agent)
+        # agent.load_model(path='runs/model/upper_agent_UE3.pt')
+        # test_eps=2
+        # res_dic = test(arg_dict, env_beam, agent,test_eps)
 
         # save_results(res_dic, tag='test', path='runs/DQN_upper_beam')
-        plot_rewards(res_dic['rewards'], arg_dict, path='runs/DQN_upper_beam', tag="test")
+        # plot_rewards(res_dic['rewards'], arg_dict, path='runs/DQN_upper_beam', tag="test")
+        #
+        # env_beam, agent = create_env_agent(arg_dict)
+
+        # ---------------baseline---------------
+        with open('runs/model/agent_beam_DQN.pkl', 'rb') as f:
+            agent2 = pickle.load(f)
+        env_beam_DQN = env.BeamformBL(env_beam)
+        state = env_beam_DQN.reset()
+        done = False
+        episode_reward = 0
+        res = []
+        while not done:
+            action = agent2.choose_action(state, epsilon=0)
+            res.append(action)
+            next_state, reward, done, _ = env_beam_DQN.step(action)
+            episode_reward += reward
+        print("-----------------evaluate_reward:{} \t \n SINR: {} \t SE:{}\n".format(
+            episode_reward, next_state, reward * 10))

@@ -20,6 +20,7 @@ from replay_buffer import N_Steps_Prioritized_ReplayBuffer
 from tiles import tile
 from torch.utils.tensorboard import SummaryWriter
 import Draw_pic
+import para
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -133,31 +134,16 @@ class Runner():
         return qoe
 
 
-import time
-
-if __name__ == '__main__':
-    # 防止报错 OMP: Error #15: Initializing libiomp5md.dll, but found libiomp5md.dll already initialized.
-    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
-    # 获取当前路径
-    curr_path = os.path.dirname(os.path.abspath(__file__))
-    # 获取当前时间
-    curr_time = datetime.datetime.now().strftime("%Y_%m_%d-%H_%M_%S")
-    parser = argparse.ArgumentParser("Hyperparameter Setting for DQN")
-    # parser.add_argument("--max_train_steps", type=int, default=int(4e5), help=" Maximum number of training steps")
-    args = parser.parse_args()
-    # seed = 3
-
-    ttile = CustomUnpickler(open('tiles.pkl', 'rb')).load()
-
-    # writer2 = SummaryWriter(log_dir='runs/evaluate')
-
+# if __name__ == '__main__':
+def once_test():
     # 测试加载训练好的agent
     proposed = []
     uncompress = []
     greedy = []
     coarsness = []
     fov_ids = []
-    for i in range(10):
+    times = 30
+    for i in range(times):
         fov_id = np.random.randint(0, N_fovs)
         fov_ids.append(fov_id)
         print("\nfov_id:", fov_id)
@@ -168,14 +154,13 @@ if __name__ == '__main__':
         qoe2 = runner.evaluate_uncompress()
         # writer2.add_scalar('evaluate_rewards:', episode_reward, global_step=i + 1)
         qoe3 = runner.greedy(fov_id)
-        qoe4 = runner.coarsness(fov_id=2)
-
+        qoe4 = runner.coarsness(fov_id)
         proposed.append(qoe1)
         uncompress.append(qoe2)
         greedy.append(qoe3)
         coarsness.append(qoe4)
-    Draw_pic.draw_evaluate(fov_ids, proposed, uncompress, greedy, coarsness)
-
+    # Draw_pic.draw_evaluate(fov_ids, proposed, uncompress, greedy, coarsness)
+    return sum(proposed) / times, sum(uncompress) / times, sum(greedy) / times, sum(coarsness) / times
     # 测试baseline-greedy
     # runner = Runner(args=args, ttile=ttile, fov_id=3)
     # runner.greedy(fov_id=2)
@@ -183,3 +168,50 @@ if __name__ == '__main__':
     # # 测试baseline-greedy
     # runner = Runner(args=args, ttile=ttile, fov_id=2)
     # runner.coarsness(fov_id=2)
+
+
+def qualityVsT():
+    proposed = []
+    uncompress = []
+    greedy = []
+    coarsness = []
+    fov_ids = []
+    ts = [0.1, 0.125, 0.150, 0.175, 0.20]
+    for t in ts:
+        para.T_slot = t
+        p, u, g, c = once_test()
+        proposed.append(p)
+        greedy.append(g)
+        coarsness.append(c)
+        uncompress.append(u)
+    Draw_pic.plot_QoE_t(ts, proposed, uncompress, greedy, coarsness)
+
+
+def qualityVsF():
+    proposed = []
+    uncompress = []
+    greedy = []
+    coarsness = []
+    fov_ids = []
+    Fs = np.array([0.1e8, 0.5e8, 1.0e8, 1.5e8, 2.0e8])
+    for F in Fs:
+        para.F_max = F
+        p, u, g, c = once_test()
+        proposed.append(p)
+        greedy.append(g)
+        coarsness.append(c)
+        uncompress.append(u)
+    Draw_pic.plot_QoE_F(Fs / 1e9, proposed, uncompress, greedy, coarsness)
+
+
+if __name__ == '__main__':
+    # 防止报错 OMP: Error #15: Initializing libiomp5md.dll, but found libiomp5md.dll already initialized.
+    os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
+    parser = argparse.ArgumentParser("Hyperparameter Setting for DQN")
+    # parser.add_argument("--max_train_steps", type=int, default=int(4e5), help=" Maximum number of training steps")
+    args = parser.parse_args()
+    ttile = CustomUnpickler(open('tiles.pkl', 'rb')).load()
+
+    # qualityVsT()
+
+    qualityVsF()
