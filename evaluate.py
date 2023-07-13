@@ -99,7 +99,7 @@ class Runner():
             episode_reward = 0
             episode_steps = 0
             while not done:
-                action = self.agent2.choose_action(state, epsilon=0)
+                action = self.agent2.choose_action(state, epsilon=-1)
                 res.append(action)
                 episode_steps += 1
                 next_state, reward, done, _ = self.env2.step(action, episode_steps)
@@ -190,6 +190,7 @@ def qualityVsT():
 def qualityVsF():
     proposed = []
     uncompress = []
+    u = 0
     greedy = []
     coarsness = []
     fov_ids = []
@@ -200,9 +201,40 @@ def qualityVsF():
         proposed.append(p)
         greedy.append(g)
         coarsness.append(c)
-        uncompress.append(u)
+    uncompress = [u] * len(Fs)
     Draw_pic.plot_QoE_F(Fs / 1e9, proposed, uncompress, greedy, coarsness)
 
+
+def qualityVsSinr():
+    proposed = []
+    uncompress = []
+    greedy = []
+    coarsness = []
+    sinrs = np.array([4, 7, 10, 13, 16])
+    for s in sinrs:
+        para.sinr = para.dBconvert(s)
+        p, u, g, c = once_test()
+        proposed.append(p)
+        greedy.append(g)
+        coarsness.append(c)
+        uncompress.append(u)
+    Draw_pic.plot_QoE_Sinr(sinrs, proposed, uncompress, greedy, coarsness)
+
+
+def qualityVsBW():
+    proposed = []
+    uncompress = []
+    greedy = []
+    coarsness = []
+    BWs = np.array([35, 40, 45, 50, 55]) * para.MHZ
+    for b in BWs:
+        para.B = b
+        p, u, g, c = once_test()
+        proposed.append(p)
+        greedy.append(g)
+        coarsness.append(c)
+        uncompress.append(u)
+    Draw_pic.plot_QoE_BW(BWs / para.MHZ, proposed, uncompress, greedy, coarsness)
 
 if __name__ == '__main__':
     # 防止报错 OMP: Error #15: Initializing libiomp5md.dll, but found libiomp5md.dll already initialized.
@@ -215,3 +247,7 @@ if __name__ == '__main__':
     # qualityVsT()
 
     qualityVsF()
+
+    # qualityVsSinr()
+
+    # qualityVsBW()

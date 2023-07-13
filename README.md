@@ -183,3 +183,9 @@ greedy算法终于比proposed算法QoE低了了！但proposed没有收敛！
 - 明天的任务：beamforming的结果展示，和随机算法、DQN算法对比，然后论文就可以展示两个子问题分别
 的结果对比，然后给出总体的QoE对比图。
 
+# 7.14日
+- 多加了个bandwith vs QoE的图；又写了一下evaluate_beam_DQN的测试；
+- 遇到的问题有：①tile choose时sinr越大，baseline反而超过了proposed，如何解决（训练的问题）
+②beamDQN应该也要做三个agent，方便后面测试；
+③明天解决掉beam的对比图
+

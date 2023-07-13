@@ -113,11 +113,11 @@ class upperEnvironmentBeam():
         # if maxSINR == self.minQoE_index:
         #     reward *= 1.5
         # reward += 0.8
-        TF = next_state > 2
+        # TF = next_state > 2
         self.second_largest = np.partition(next_state, -2)[-2]
         if self.second_largest > 4.0:
             # reward += 0.2
-            # reward *= 2.0
+            reward *= 1.5
             pass
 
         # final_r=
@@ -133,8 +133,8 @@ class upperEnvironmentBeam():
         # self.i = np.clip(np.random.rayleigh(scale=1, size=(num_users, num_antennas)), -1, 1)
         # self.r = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
         # self.i = np.clip(np.random.randn(num_users, num_antennas), -1, 1)
-        self.r = np.clip(np.random.exponential(scale=1.0, size=(num_users, num_antennas)), -1, 1)
-        self.i = np.clip(np.random.exponential(scale=1.0, size=(num_users, num_antennas)), -1, 1)
+        self.r = np.clip(np.random.exponential(scale=2.0, size=(num_users, num_antennas)), -1, 1)
+        self.i = np.clip(np.random.exponential(scale=2.0, size=(num_users, num_antennas)), -1, 1)
         h = np.sqrt(0.5) * self.r + 1j * self.i
         return h
 
@@ -379,6 +379,8 @@ class subEnvironment:
         q = para.get_QoE(dis_i, Oi, zi_nor, li)
         reward = p + q
 
+        if self.time_occu > 1:
+            q = para.get_QoE(dis_i, Oi, zi_nor, 1)
         self.tile_QoE.append(q)
         # reward = min(15, reward)
         # if k==0:
@@ -572,9 +574,9 @@ class env_uncompress():
         Mil = self.action_value[l] * self.Mi
         # 既然Tu算不了，就先把传输的比特数作为环境，归一化(可以算了
         data_tiles = Mil
-        self.tile_data.append(data_tiles)
-        self.all_data += data_tiles
-        self.all_data_nor = linear_normalization(self.all_data)
+        # self.tile_data.append(data_tiles)
+        # self.all_data += data_tiles
+        # self.all_data_nor = linear_normalization(self.all_data)
         Tu = data_tiles / self.trans.rt
         # 计算Td
         # 计算Qi
@@ -584,15 +586,19 @@ class env_uncompress():
         Oi = self.ttile.O[self.searchId[index - 1]]
         li = l + 1
         #########奖励设置################
-        self.Bt = self.Bt + para.f / para.fps - para.T_slot
+        # self.Bt = self.Bt + para.f / para.fps - para.T_slot
         self.time_occu += (Tu + Td) / para.T_slot
-        self.Tu_Td.append([Tu, Td])
+        # self.Tu_Td.append([Tu, Td])
         # dismax=1 zimax=1 limax=4.5
-        p = 0
+        # p = 0
         zi_nor = self.get_z_nor(zi)
-        q = para.get_QoE(dis_i, Oi, zi_nor, li)
-        reward = p + q
+        zi *= 10
+        q = para.get_QoE(dis_i, Oi, zi, li)
+        reward = q
 
+        if self.time_occu > 1:
+            # q=para.get_QoE(dis_i, Oi, zi_nor, 1)
+            q = 0.0
         self.tile_QoE.append(q)
         if self.time_occu > 1:
             # reward /= 2.0

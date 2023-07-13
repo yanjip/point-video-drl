@@ -138,7 +138,7 @@ class Runner():
         # torch.save(model.state_dict(), 'model.pt')
 
         # 保存 agent
-        with open('runs/model/agent_beam_DQN.pkl', 'wb') as f:
+        with open('runs/model/agent_beam_DQN_7_13.pkl', 'wb') as f:
             pickle.dump(self.agent, f)
         # self.evaluate_policy()
 

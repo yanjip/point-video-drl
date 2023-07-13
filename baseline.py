@@ -184,7 +184,10 @@ class tileCoarsness:
                 zi = self.z[index]
                 Oi = self.ttile.O[self.searchId[index]]
                 zi_nor = self.get_z_nor(zi)
-                QoE_now += self.get_QoE(dis_i, Oi, zi_nor, li)
+                q = self.get_QoE(dis_i, Oi, zi_nor, li)
+                if self.time_occu > 1:
+                    q = 0.0
+                QoE_now += q
                 if action < 5:
                     Mil_com = Mil * para.co_ratio
                     self.Dt += Mil_com

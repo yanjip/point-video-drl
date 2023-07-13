@@ -32,9 +32,10 @@ def train(arg_dict, env_beam, agent):
     final_SE = 0
     ma_rewards = []  # 记录所有回合的滑动平均奖励
     current_time = datetime.datetime.now().strftime("%Y%m%d-%H%M%S")
-    train_log_dir = 'runs/DQN_upper_beam/' + current_time
+    train_log_dir = 'runs/DDPG_upper_beam/' + current_time
     # writer = SummaryWriter(log_dir=train_log_dir)
-
+    totol_step = arg_dict['train_eps']
+    randomBase = []
     for i_ep in range(arg_dict['train_eps']):
         # agent.var =max(0.2,agent.var* 0.995)
         state = env_beam.reset()
@@ -73,7 +74,8 @@ def train(arg_dict, env_beam, agent):
             # print(f'Env_beam:{i_ep + 1}/{arg_dict["train_eps"]}, Reward:{ep_reward :.2f}')
             print(f'DDPG:{d},*******,baseline:{b}')
             print("--------------------------------\n")
-
+        if totol_step - i_ep < 20:
+            randomBase.append(b)
         rewards.append(ep_reward)
         if ma_rewards:
             ma_rewards.append(0.9 * ma_rewards[-1] + 0.1 * ep_reward)
@@ -82,7 +84,7 @@ def train(arg_dict, env_beam, agent):
     print(f'Final_SINR:{final_sinr},Final_SE:{final_SE}')
     print("Final_W:", final_W)
     # write_sinr(env_beam.best_sinr, d)
-    write_sinr(final_sinr, final_SE)
+    write_sinr(final_sinr, final_SE, sum(randomBase) / 20)
 
     # saveH_W.save_res(env_beam.final_res)
 
@@ -105,18 +107,18 @@ def test(arg_dict, env_beam, agent, test_eps):
         ep_reward = 0
         i_step = 0
         timestamp = 0
+        final_SE = 0
         while not done:
             i_step += 1
             timestamp += 1
             action = agent.choose_action(state)
-            # action = ou_noise.get_action(action, i_step)
-            # action = 0 + (np.sqrt(para.maxPower) - 0) * (action + 1) / 2  # 将动作映射到（0，high）
             next_state, reward, done, _ = env_beam.step(action)
             if timestamp >= para.max_timestamp:
                 print("W:", env_beam.W, end='\n\n')
                 done = np.float32(1.0)
             ep_reward += reward
             state = next_state
+            # final_sinr = env_beam.best_sinr
         # if (i_ep + 1) % 2 == 0:
         #     print(f'Env_beam:{i_ep + 1}/{arg_dict["test_eps"]}, Reward:{ep_reward:.2f}')
         # rewards.append(ep_reward)
@@ -128,6 +130,9 @@ def test(arg_dict, env_beam, agent, test_eps):
         d, b = env_beam.baseline_random()
         print(f'DDPG:{d},*******,baseline:{b}')
         rewards.append(d)
+        if d > final_SE and env_beam.second_largest > 10:
+            final_SE = d
+            final_sinr = env_beam.best_sinr
         if ma_rewards:
             ma_rewards.append(0.9 * ma_rewards[-1] + 0.1 * d)
         else:
@@ -135,7 +140,9 @@ def test(arg_dict, env_beam, agent, test_eps):
         print("*" * 60)
 
     print("测试结束 , 用时: " + str(time.time() - startTime) + " s")
-    return {'episodes': range(len(rewards)), 'rewards': rewards}
+    print(f'Final_SINR:{final_sinr},Final_SE:{final_SE}')
+    # print("Final_W:", final_W)
+    return next_state[-para.K:], d
 
 
 if __name__ == '__main__':
@@ -148,7 +155,7 @@ if __name__ == '__main__':
     # 相关参数设置
     parser = argparse.ArgumentParser(description="hyper parameters")
     parser.add_argument('--algo_name', default='DDPG', type=str, help="name of algorithm")
-    parser.add_argument('--train_eps', default=350, type=int, help="episodes of training")  # 原本150
+    parser.add_argument('--train_eps', default=250, type=int, help="episodes of training")  # 原本150
     parser.add_argument('--test_eps', default=70, type=int, help="episodes of testing")
     parser.add_argument('--gamma', default=0.99, type=float, help="discounted factor")
     parser.add_argument('--critic_lr', default=0.5e-3, type=float, help="learning rate of critic")
@@ -184,8 +191,8 @@ if __name__ == '__main__':
 
         agent.save_model(path='runs/model/')
         # save_args(arg_dict, path=arg_dict['result_path'])
-        # save_results(res_dic, tag='train', path='runs/DQN_upper_beam')
-        plot_rewards(res_dic['rewards'], arg_dict, path='runs/DQN_upper_beam', tag="train")
+        # save_results(res_dic, tag='train', path='runs/DDPG_upper_beam')
+        # plot_rewards(res_dic['rewards'], arg_dict, path='runs/DDPG_upper_beam', tag="train")
 
     # ---------------------------------测试---------------------------------------------------#
     if test_flag:
@@ -195,27 +202,26 @@ if __name__ == '__main__':
 
         env_beam, agent = create_env_agent(arg_dict)
         # 加载已保存的智能体
-        # agent.load_model(path='runs/model/upper_agent_UE3.pt')
-        # test_eps=2
-        # res_dic = test(arg_dict, env_beam, agent,test_eps)
+        agent.load_model(path='runs/model/agent_upper_beam.pt')
+        test_eps = 1
+        sinr, SE = test(arg_dict, env_beam, agent, test_eps)
 
-        # save_results(res_dic, tag='test', path='runs/DQN_upper_beam')
-        # plot_rewards(res_dic['rewards'], arg_dict, path='runs/DQN_upper_beam', tag="test")
-        #
-        # env_beam, agent = create_env_agent(arg_dict)
+        # save_results(res_dic, tag='test', path='runs/DDPG_upper_beam')
+        # plot_rewards(res_dic['rewards'], arg_dict, path='runs/DDPG_upper_beam', tag="test")
 
         # ---------------baseline---------------
-        with open('runs/model/agent_beam_DQN.pkl', 'rb') as f:
-            agent2 = pickle.load(f)
-        env_beam_DQN = env.BeamformBL(env_beam)
-        state = env_beam_DQN.reset()
-        done = False
-        episode_reward = 0
-        res = []
-        while not done:
-            action = agent2.choose_action(state, epsilon=0)
-            res.append(action)
-            next_state, reward, done, _ = env_beam_DQN.step(action)
-            episode_reward += reward
-        print("-----------------evaluate_reward:{} \t \n SINR: {} \t SE:{}\n".format(
-            episode_reward, next_state, reward * 10))
+        # with open('runs/model/agent_beam_DQN_7_13.pkl', 'rb') as f:
+        #     agent2 = pickle.load(f)
+        # env_beam_DQN = env.BeamformBL(env_beam)
+        # state = env_beam_DQN.reset()
+        # done = False
+        # episode_reward = 0
+        # res = []
+        # while not done:
+        #     action = agent2.choose_action(state, epsilon=0)
+        #     res.append(action)
+        #     next_state, reward, done, _ = env_beam_DQN.step(action)
+        #     state = next_state
+        #     episode_reward += reward
+        # print("-----------------evaluate_reward:{} \t \n SINR: {} \t SE:{}\n".format(
+        #     episode_reward, next_state, reward * 10))

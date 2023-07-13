@@ -11,6 +11,7 @@ import json
 import random
 import torch
 import pandas as pd
+import para
 import datetime
 
 from matplotlib.font_manager import FontProperties  # 导入字体模块
@@ -155,10 +156,12 @@ def save_args(args, path=None):
 import time
 
 
-def write_sinr(sinr, SE):
+def write_sinr(sinr, SE, random_SE):
     with open('H_W/sinr_SE.txt', 'a+') as F:
         F.write(time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(time.time())) + '\n')
-        F.write("SINR:" + str(sinr) + "       SE_all:" + str(SE) + "\n\n")
+        F.write("----Power:" + str(para.maxPower) + '\n')
+        F.write("SINR:" + str(sinr) + "       SE_all:" + str(SE) + "\n")
+        F.write("Random_SE:" + str(random_SE) + "\n\n")
 
 
 def draw_evaluate(fov_id, proposed, uncompress, greedy, coarsness):
@@ -181,8 +184,12 @@ def draw_evaluate(fov_id, proposed, uncompress, greedy, coarsness):
     # 显示图形
     plt.show()
 
+
 def plot_QoE_t(ts, proposed, uncompress, greedy, coarsness):
-    plt.rcParams['font.sans-serif'] = ['SimHei']
+    # plt.rcParams['font.sans-serif'] = ['SimHei']
+    # 设置字体属性
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = 'Times New Roman'
     plt.plot(ts, proposed, marker='o', label='proposed')  ## 使用圆形节点
     plt.plot(ts, uncompress, marker='s', label='uncompress')  # 使用方形节点
     plt.plot(ts, greedy, marker='^', label='greedy')  # 使用三角形节点
@@ -201,6 +208,9 @@ def plot_QoE_t(ts, proposed, uncompress, greedy, coarsness):
 
 def plot_QoE_F(Fs, proposed, uncompress, greedy, coarsness):
     # plt.rcParams['font.sans-serif'] = ['SimHei']
+    # 设置字体属性
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = 'Times New Roman'
     plt.plot(Fs, proposed, marker='o', label='proposed')  ## 使用圆形节点
     plt.plot(Fs, uncompress, marker='s', label='uncompress')  # 使用方形节点
     plt.plot(Fs, greedy, marker='^', label='greedy')  # 使用三角形节点
@@ -215,6 +225,45 @@ def plot_QoE_F(Fs, proposed, uncompress, greedy, coarsness):
     # 显示图形
     plt.show()
 
+
+def plot_QoE_Sinr(Fs, proposed, uncompress, greedy, coarsness):
+    # plt.rcParams['font.sans-serif'] = ['SimHei']
+    # 设置字体属性
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = 'Times New Roman'
+    plt.plot(Fs, proposed, marker='o', label='proposed')  ## 使用圆形节点
+    plt.plot(Fs, uncompress, marker='s', label='uncompress')  # 使用方形节点
+    plt.plot(Fs, greedy, marker='^', label='greedy')  # 使用三角形节点
+    plt.plot(Fs, coarsness, marker='+', label='coarsness')
+
+    plt.legend(loc='best')
+    plt.xlabel('SINR (dB)')
+    plt.ylabel('Quality of Video')
+    plt.title('Playback Quality with Different SINR')
+    a = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    plt.savefig("runs/baseline/Sinr_QoE-" + a)
+    # 显示图形
+    plt.show()
+
+
+def plot_QoE_BW(Fs, proposed, uncompress, greedy, coarsness):
+    # plt.rcParams['font.sans-serif'] = ['SimHei']
+    # 设置字体属性
+    plt.rcParams['font.family'] = 'serif'
+    plt.rcParams['font.serif'] = 'Times New Roman'
+    plt.plot(Fs, proposed, marker='o', label='proposed')  ## 使用圆形节点
+    plt.plot(Fs, uncompress, marker='s', label='uncompress')  # 使用方形节点
+    plt.plot(Fs, greedy, marker='^', label='greedy')  # 使用三角形节点
+    plt.plot(Fs, coarsness, marker='+', label='coarsness')
+
+    plt.legend(loc='best')
+    plt.xlabel('Bandwith (MHz)')
+    plt.ylabel('Quality of Video')
+    plt.title('Playback Quality with Different Bandwith')
+    a = datetime.datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
+    plt.savefig("runs/baseline/Bandwith_QoE-" + a)
+    # 显示图形
+    plt.show()
 
 if __name__ == '__main__':
     # sinr = [11.379501, 4.522286, 41.942398]

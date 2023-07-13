@@ -54,7 +54,7 @@ a2 = 0.5
 T_slot = 0.2  # 原本0.2 大于了效果就不好了
 
 # UE
-F_max = 0.6e9  # cycles/s MEC那篇论文为0.5G    0.5e9
+F_max = 0.5e9  # cycles/s MEC那篇论文为0.5G    0.5e9
 b_s = 0.03e3  # bits/cycle  MEC   之前0.02
 D_max = 1 * GB  # HMD的处理区数据量大小
 
@@ -64,7 +64,7 @@ QoE0 = 10
 sinr = 30.0
 
 # upper para
-maxPower = 10.0
+maxPower = 10  # 原本10
 area_size = 500
 max_timestamp = 30
 
@@ -113,3 +113,18 @@ def get_QoE(dis_i, Oi, zi_nor, li):
     # flag=max(flag,zi_nor)
     # print("zi_nor:",flag) #2.4689592944196628
     return q
+
+
+def dBconvert(sinr_db):
+    sinr_linear = np.power(10, sinr_db / 10)  # 将SINR的分贝值转换为比值
+    return sinr_linear
+
+
+def watconvert(power_dbm):
+    power_watt = math.pow(10, (power_dbm - 30) / 10)
+    return power_watt
+
+
+if __name__ == '__main__':
+    for i in [37, 39, 41, 42, 43]:
+        print(watconvert(i))

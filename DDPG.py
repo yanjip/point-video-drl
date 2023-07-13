@@ -215,7 +215,8 @@ class DDPG:
 
     def save_model(self, path):
 
-        torch.save(self.actor.state_dict(), path + 'upper_agent_UE{}.pt'.format(para.K))
+        # torch.save(self.actor.state_dict(), path + 'upper_agent_UE{}.pt'.format(para.K))
+        torch.save(self.actor.state_dict(), path + 'agent_upper_beam.pt'.format(para.K))
 
     def load_model(self, path):
 
